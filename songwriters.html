@@ -51,14 +51,6 @@
                 <input type="text" id="ipBases">
             </div>
             <div>
-                <label for="role">Role:</label>
-                <select id="role" required>
-                    <option value="A">Author</option>
-                    <option value="C">Composer</option>
-                    <option value="CA">Composer & Author</option>
-                </select>
-            </div>
-            <div>
                 <label for="status">Status:</label>
                 <select id="status" required>
                     <option value="Signed">Signed</option>
@@ -78,7 +70,6 @@
                     <th>KTP Number</th>
                     <th>IP Names</th>
                     <th>IP Bases</th>
-                    <th>Role</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -99,10 +90,9 @@
             const ktpNumber = document.getElementById('ktpNumber').value;
             const ipNames = document.getElementById('ipNames').value;
             const ipBases = document.getElementById('ipBases').value;
-            const role = document.getElementById('role').value;
             const status = document.getElementById('status').value;
 
-            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, role, status };
+            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, status };
 
             songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
@@ -121,9 +111,8 @@
                 row.insertCell(3).textContent = sw.ktpNumber;
                 row.insertCell(4).textContent = sw.ipNames;
                 row.insertCell(5).textContent = sw.ipBases;
-                row.insertCell(6).textContent = sw.role;
-                row.insertCell(7).textContent = sw.status;
-                row.insertCell(8).innerHTML = `<button onclick="editSongwriter(${index})">Edit</button> <button onclick="deleteSongwriter(${index})">Delete</button>`;
+                row.insertCell(6).textContent = sw.status;
+                row.insertCell(7).innerHTML = `<button onclick="editSongwriter(${index})">Edit</button> <button onclick="deleteSongwriter(${index})">Delete</button>`;
             });
         }
 
