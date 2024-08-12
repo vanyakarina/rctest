@@ -11,6 +11,7 @@
         .input-form div { display: flex; align-items: center; margin-bottom: 10px; }
         .input-form label { margin-right: 10px; width: 150px; }
         .input-form input, .input-form select { flex: 1; }
+        .input-form select { flex: 2; }
     </style>
 </head>
 <body>
@@ -31,33 +32,40 @@
             </div>
             <div>
                 <label for="bankName">Bank Name:</label>
-                <input type="text" id="bankName">
+                <input type="text" id="bankName" required>
             </div>
             <div>
                 <label for="bankAccount">Bank Account:</label>
-                <input type="text" id="bankAccount">
+                <input type="text" id="bankAccount" required>
             </div>
             <div>
                 <label for="ktpNumber">KTP Number:</label>
-                <input type="text" id="ktpNumber">
+                <input type="text" id="ktpNumber" required>
             </div>
             <div>
                 <label for="ipNames">IP Names:</label>
-                <input type="text" id="ipNames" placeholder="Enter IP Names separated by commas">
+                <input type="text" id="ipNames">
             </div>
             <div>
                 <label for="ipBases">IP Bases:</label>
-                <input type="text" id="ipBases" placeholder="Enter IP Bases separated by commas">
+                <input type="text" id="ipBases">
             </div>
             <div>
                 <label for="role">Role:</label>
-                <select id="role">
+                <select id="role" required>
                     <option value="A">Author</option>
                     <option value="C">Composer</option>
                     <option value="CA">Composer & Author</option>
                 </select>
             </div>
-            <button type="button" onclick="addToSongwriters()">Add Songwriter</button>
+            <div>
+                <label for="status">Status:</label>
+                <select id="status" required>
+                    <option value="Signed">Signed</option>
+                    <option value="Unsigned">Unsigned</option>
+                </select>
+            </div>
+            <button type="button" onclick="addSongwriter()">Add Songwriter</button>
         </form>
         
         <h2>Songwriter List</h2>
@@ -84,7 +92,7 @@
     <script>
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
-        function addToSongwriters() {
+        function addSongwriter() {
             const name = document.getElementById('name').value;
             const bankName = document.getElementById('bankName').value;
             const bankAccount = document.getElementById('bankAccount').value;
@@ -92,8 +100,9 @@
             const ipNames = document.getElementById('ipNames').value;
             const ipBases = document.getElementById('ipBases').value;
             const role = document.getElementById('role').value;
+            const status = document.getElementById('status').value;
 
-            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, role, status: 'Unsigned' };
+            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, role, status };
 
             songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
