@@ -3,29 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Songwriter List</title>
+    <title>Songwriter Input</title>
     <style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
-    <h1>Songwriter List</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Bank Account</th>
-                <th>KTP Number</th>
-                <th>IP Names</th>
-                <th>IP Bases</th>
-                <th>Works</th>
-            </tr>
-        </thead>
-        <tbody id="songwriterTable">
-            <!-- Dynamic rows will be added here using JavaScript -->
-        </tbody>
-    </table>
-    <!-- Form to add new songwriters can be included here -->
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="songwriter.html">Songwriter Input</a>
+        <a href="catalogue.html">Catalogue Input</a>
+        <a href="royalty.html">Royalty Calculation</a>
+    </nav>
+
+    <div class="content">
+        <h1>Input Songwriter Data</h1>
+        <form id="songwriterForm">
+            <input type="text" id="songwriterName" placeholder="Songwriter Name" required>
+            <input type="text" id="songwriterBank" placeholder="Bank Account" required>
+            <input type="text" id="songwriterKTP" placeholder="KTP Number" required>
+            <input type="text" id="songwriterIPName" placeholder="IP Name" required>
+            <input type="text" id="songwriterIPBase" placeholder="IP Base" required>
+            <button type="button" onclick="addSongwriter()">Add Songwriter</button>
+        </form>
+
+        <h2>Songwriter List</h2>
+        <table id="songwriterTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Bank Account</th>
+                    <th>KTP Number</th>
+                    <th>IP Name</th>
+                    <th>IP Base</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Songwriter data will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let songwriters = [];
+
+        function addSongwriter() {
+            const name = document.getElementById('songwriterName').value;
+            const bank = document.getElementById('songwriterBank').value;
+            const ktp = document.getElementById('songwriterKTP').value;
+            const ipName = document.getElementById('songwriterIPName').value;
+            const ipBase = document.getElementById('songwriterIPBase').value;
+
+            if (name && bank && ktp && ipName && ipBase) {
+                const songwriter = { name, bank, ktp, ipName, ipBase };
+                songwriters.push(songwriter);
+                updateSongwriterTable();
+                clearSongwriterForm();
+            } else {
+                alert('Please fill in all fields.');
+            }
+        }
+
+        function updateSongwriterTable() {
+            const tableBody = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            songwriters.forEach(sw => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = sw.name;
+                row.insertCell(1).textContent = sw.bank;
+                row.insertCell(2).textContent = sw.ktp;
+                row.insertCell(3).textContent = sw.ipName;
+                row.insertCell(4).textContent = sw.ipBase;
+            });
+        }
+
+        function clearSongwriterForm() {
+            document.getElementById('songwriterForm').reset();
+        }
+    </script>
 </body>
 </html>
