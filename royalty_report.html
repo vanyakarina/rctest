@@ -20,16 +20,8 @@
         nav a:hover {
             background-color: #575757;
         }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            padding: 20px;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        h1 {
-            color: #333;
+        .content {
+            margin: 20px;
         }
         table {
             width: 100%;
@@ -42,39 +34,95 @@
             padding: 8px;
             text-align: left;
         }
-        th {
-            background-color: #f2f2f2;
+        form {
+            margin-bottom: 20px;
+        }
+        label, select, input, button {
+            margin-right: 10px;
+        }
+        select {
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <nav>
         <a href="index.html">Home</a>
+        <a href="songwriters.html">Songwriters</a>
         <a href="catalogue_input.html">Catalogue Registration</a>
         <a href="catalogue_list.html">Works</a>
-        <a href="songwriters.html">Songwriters</a>
-        <a href="royalty_calculator.html">Royalty Calculator</a>
+        <a href="royalty.html">Royalty Calculator</a>
         <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
-    <div class="container">
+    <div class="content">
         <h1>Royalty Report</h1>
         <form id="reportForm">
-            <label for="reportDate">Date:</label>
-            <input type="date" id="reportDate" required>
-            <button type="button" onclick="generateReport()">Generate Report</button>
+            <label for="reportPeriod">Royalty Period:</label>
+            <select id="reportPeriod" required>
+                <option value="">Select a period</option>
+                <!-- Generating periods from 2020 to 2030 -->
+                <option value="Jan-Jun 20">Jan-Jun 20</option>
+                <option value="Jul-Dec 20">Jul-Dec 20</option>
+                <option value="Jan-Jun 21">Jan-Jun 21</option>
+                <option value="Jul-Dec 21">Jul-Dec 21</option>
+                <option value="Jan-Jun 22">Jan-Jun 22</option>
+                <option value="Jul-Dec 22">Jul-Dec 22</option>
+                <option value="Jan-Jun 23">Jan-Jun 23</option>
+                <option value="Jul-Dec 23">Jul-Dec 23</option>
+                <option value="Jan-Jun 24">Jan-Jun 24</option>
+                <option value="Jul-Dec 24">Jul-Dec 24</option>
+                <option value="Jan-Jun 25">Jan-Jun 25</option>
+                <option value="Jul-Dec 25">Jul-Dec 25</option>
+                <option value="Jan-Jun 26">Jan-Jun 26</option>
+                <option value="Jul-Dec 26">Jul-Dec 26</option>
+                <option value="Jan-Jun 27">Jan-Jun 27</option>
+                <option value="Jul-Dec 27">Jul-Dec 27</option>
+                <option value="Jan-Jun 28">Jan-Jun 28</option>
+                <option value="Jul-Dec 28">Jul-Dec 28</option>
+                <option value="Jan-Jun 29">Jan-Jun 29</option>
+                <option value="Jul-Dec 29">Jul-Dec 29</option>
+                <option value="Jan-Jun 30">Jan-Jun 30</option>
+                <option value="Jul-Dec 30">Jul-Dec 30</option>
+            </select>
+            <br><br>
+            <label for="songs">Select Songs:</label>
+            <select id="songs" multiple required>
+                <!-- Options will be filled by JavaScript -->
+            </select>
+            <br><br>
+            <button type="button" onclick="populateRoyaltiesForm()">Populate Royalties Form</button>
         </form>
 
-        <h2>Royalty Report</h2>
+        <div id="royaltiesInput">
+            <h2>Input Royalties</h2>
+            <form id="royaltiesForm">
+                <table id="royaltiesTable">
+                    <thead>
+                        <tr>
+                            <th>Song Title</th>
+                            <th>Digital Royalty</th>
+                            <th>Synch Royalty</th>
+                            <th>Mechanical Royalty</th>
+                            <th>Performance Royalty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Royalties input rows will be added here -->
+                    </tbody>
+                </table>
+                <br>
+                <button type="button" onclick="generateReport()">Generate Report</button>
+            </form>
+        </div>
+
+        <h2>Royalty Report Breakdown</h2>
         <table id="reportTable">
             <thead>
                 <tr>
-                    <th>Song Title</th>
                     <th>Songwriter</th>
-                    <th>Role</th>
-                    <th>Share (%)</th>
+                    <th>Status</th>
                     <th>Total Royalty</th>
-                    <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -87,65 +135,82 @@
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
+        function populateSongs() {
+            const songsSelect = document.getElementById('songs');
+            catalogue.forEach(song => {
+                const option = document.createElement('option');
+                option.value = song.title;
+                option.textContent = song.title;
+                songsSelect.appendChild(option);
+            });
+        }
+
+        function populateRoyaltiesForm() {
+            const selectedSongs = Array.from(document.getElementById('songs').selectedOptions).map(option => option.value);
+            const royaltiesTableBody = document.getElementById('royaltiesTable').getElementsByTagName('tbody')[0];
+            royaltiesTableBody.innerHTML = '';
+
+            selectedSongs.forEach(title => {
+                const song = catalogue.find(s => s.title === title);
+                if (song) {
+                    const row = royaltiesTableBody.insertRow();
+                    row.insertCell(0).textContent = title;
+                    row.insertCell(1).innerHTML = `<input type="number" step="0.01" id="digital_${title}" placeholder="0.00" required>`;
+                    row.insertCell(2).innerHTML = `<input type="number" step="0.01" id="synch_${title}" placeholder="0.00" required>`;
+                    row.insertCell(3).innerHTML = `<input type="number" step="0.01" id="mechanical_${title}" placeholder="0.00" required>`;
+                    row.insertCell(4).innerHTML = `<input type="number" step="0.01" id="performance_${title}" placeholder="0.00" required>`;
+                }
+            });
+        }
+
         function generateReport() {
-            const reportDate = document.getElementById('reportDate').value;
-            const reportTableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
-            reportTableBody.innerHTML = '';
+            const period = document.getElementById('reportPeriod').value;
+            if (!period) {
+                alert('Please select a period.');
+                return;
+            }
 
-            let totalRoyalties = [];
+            let songwriterTotalRoyalties = {};
 
-            catalogue.forEach(entry => {
-                entry.songwriters.forEach(sw => {
-                    let songwriter = songwriters.find(s => s.name === sw.name);
-                    if (songwriter && songwriter.signed) {
-                        let amount = (sw.share / 100) * getTotalRoyalty(entry.title);
-                        totalRoyalties.push({
-                            title: entry.title,
-                            name: sw.name,
-                            role: sw.role,
-                            share: sw.share,
-                            totalRoyalty: getTotalRoyalty(entry.title),
-                            amount: amount.toFixed(2)
-                        });
+            catalogue.forEach(song => {
+                const title = song.title;
+                const digitalRoyalty = parseFloat(document.getElementById(`digital_${title}`)?.value || 0);
+                const synchRoyalty = parseFloat(document.getElementById(`synch_${title}`)?.value || 0);
+                const mechanicalRoyalty = parseFloat(document.getElementById(`mechanical_${title}`)?.value || 0);
+                const performanceRoyalty = parseFloat(document.getElementById(`performance_${title}`)?.value || 0);
+
+                song.songwriters.forEach(sw => {
+                    const songwriter = songwriters.find(s => s.name === sw.name);
+                    const share = sw.share;
+                    const isSigned = songwriter && songwriter.signed;
+
+                    if (isSigned) {
+                        // Calculate royalties based on song's shares
+                        const totalSongRoyalty = (share / 100) * (digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty);
+                        if (!songwriterTotalRoyalties[sw.name]) {
+                            songwriterTotalRoyalties[sw.name] = { total: 0, status: isSigned ? 'Signed' : 'Unsigned' };
+                        }
+                        songwriterTotalRoyalties[sw.name].total += totalSongRoyalty;
                     }
                 });
             });
 
-            totalRoyalties.forEach(royalty => {
-                const row = reportTableBody.insertRow();
-                row.insertCell(0).textContent = royalty.title;
-                row.insertCell(1).textContent = royalty.name;
-                row.insertCell(2).textContent = royalty.role;
-                row.insertCell(3).textContent = royalty.share;
-                row.insertCell(4).textContent = royalty.totalRoyalty.toFixed(2);
-                row.insertCell(5).textContent = royalty.amount;
-            });
+            updateReportTable(songwriterTotalRoyalties);
         }
 
-        function getTotalRoyalty(songTitle) {
-            // This function should retrieve the total royalty amount for the given song title
-            let total = 0;
-            catalogue.forEach(entry => {
-                if (entry.title === songTitle) {
-                    total = entry.songwriters.reduce((sum, sw) => {
-                        return sum + (sw.share / 100) * getSongTotalRoyalty(entry.title);
-                    }, 0);
-                }
-            });
-            return total;
-        }
-
-        function getSongTotalRoyalty(songTitle) {
-            // This function should retrieve the song's total royalty based on its title
-            let song = catalogue.find(entry => entry.title === songTitle);
-            if (song) {
-                // Assuming total royalties are distributed equally among the songwriters for simplicity
-                return (song.digitalRoyalty || 0) + (song.syncrRoyalty || 0) + (song.performanceRoyalty || 0) + (song.mechanicalRoyalty || 0);
+        function updateReportTable(royaltyData) {
+            const tableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            for (const [name, data] of Object.entries(royaltyData)) {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = name;
+                row.insertCell(1).textContent = data.status;
+                row.insertCell(2).textContent = data.total.toFixed(2);
             }
-            return 0;
         }
 
         // Initialize the page
+        populateSongs();
     </script>
 </body>
 </html>
