@@ -50,11 +50,6 @@
         <h1>Royalty Report</h1>
         <form id="royaltyForm">
             <h2>Input Royalties</h2>
-            <label for="period">Select Period:</label>
-            <select id="period">
-                <!-- Options will be filled by JavaScript -->
-            </select>
-            <br><br>
             <table id="inputTable">
                 <thead>
                     <tr>
@@ -72,15 +67,19 @@
             <br>
             <button type="button" onclick="calculateAllRoyalties()">Save</button>
             <br><br>
+            <label for="periodSelect">Select Period:</label>
+            <select id="periodSelect">
+                <!-- Period options will be filled by JavaScript -->
+            </select>
         </form>
 
         <h2>Royalty Breakdown</h2>
         <table id="royaltyTable">
             <thead>
                 <tr>
-                    <th>Song Title</th>
                     <th>Songwriter</th>
                     <th>Status</th>
+                    <th>Song Title</th>
                     <th>Digital Royalty</th>
                     <th>Synch Royalty</th>
                     <th>Mechanical Royalty</th>
@@ -131,18 +130,18 @@
         let royalties = [];
 
         function populatePeriods() {
-            const periodSelect = document.getElementById('period');
-            const startYear = 2019;
-            const endYear = 2040;
-            const periods = ['Jan-Jun', 'Jul-Dec'];
-            for (let year = startYear; year <= endYear; year++) {
-                periods.forEach(period => {
-                    const option = document.createElement('option');
-                    option.value = `${period} ${year}`;
-                    option.textContent = `${period} ${year}`;
-                    periodSelect.appendChild(option);
-                });
+            const periodSelect = document.getElementById('periodSelect');
+            const periods = [];
+            for (let year = 2019; year <= 2040; year++) {
+                periods.push(`Jan-Jun ${year}`);
+                periods.push(`Jul-Dec ${year}`);
             }
+            periods.forEach(period => {
+                const option = document.createElement('option');
+                option.value = period;
+                option.textContent = period;
+                periodSelect.appendChild(option);
+            });
         }
 
         function populateSongTitles() {
@@ -174,8 +173,8 @@
                     const isSigned = songwriter && songwriter.signed;
                     let royalties = {
                         name: sw.name,
-                        songTitle: songTitle,
                         status: isSigned ? 'Signed' : 'Unsigned',
+                        songTitle: songTitle,
                         digital: 0,
                         synch: 0,
                         mechanical: 0,
@@ -184,11 +183,14 @@
                     };
 
                     if (isSigned) {
-                        const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
-                        royalties.digital = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * digitalRoyalty;
-                        royalties.synch = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * synchRoyalty;
-                        royalties.mechanical = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * mechanicalRoyalty;
-                        royalties.performance = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * performanceRoyalty;
+                        const totalShare = song.songwriters
+                            .filter(s => songwriters.find(sw => sw.name === s.name && sw.signed))
+                            .reduce((sum, s) => sum + (s.share || 0), 0);
+                        
+                        royalties.digital = (sw.share / totalShare) * digitalRoyalty;
+                        royalties.synch = (sw.share / totalShare) * synchRoyalty;
+                        royalties.mechanical = (sw.share / totalShare) * mechanicalRoyalty;
+                        royalties.performance = (sw.share / totalShare) * performanceRoyalty;
                         royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
                     }
 
@@ -209,9 +211,9 @@
             tableBody.innerHTML = '';
             royaltyData.forEach(data => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.songTitle;
-                row.insertCell(1).textContent = data.name;
-                row.insertCell(2).textContent = data.status;
+                row.insertCell(0).textContent = data.name;
+                row.insertCell(1).textContent = data.status;
+                row.insertCell(2).textContent = data.songTitle;
                 row.insertCell(3).textContent = data.digital.toFixed(2);
                 row.insertCell(4).textContent = data.synch.toFixed(2);
                 row.insertCell(5).textContent = data.mechanical.toFixed(2);
@@ -221,31 +223,39 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
+            const filterSongwriter = document.getElementById('filterSongwriter').value;
+            let filteredData = royaltyData;
+
+            if (filterSongwriter) {
+                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
+            }
+
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-            const filteredData = {};
-            
-            royaltyData.forEach(data => {
-                if (data.status === 'Signed') {
-                    if (!filteredData[data.name]) {
-                        filteredData[data.name] = { ...data };
-                        filteredData[data.name].digital = 0;
-                        filteredData[data.name].synch = 0;
-                        filteredData[data.name].mechanical = 0;
-                        filteredData[data.name].performance = 0;
-                        filteredData[data.name].total = 0;
-                    }
-                    filteredData[data.name].digital += data.digital;
-                    filteredData[data.name].synch += data.synch;
-                    filteredData[data.name].mechanical += data.mechanical;
-                    filteredData[data.name].performance += data.performance;
-                    filteredData[data.name].total += data.total;
+
+            const totalBySongwriter = {};
+            filteredData.forEach(data => {
+                if (!totalBySongwriter[data.name]) {
+                    totalBySongwriter[data.name] = {
+                        digital: 0,
+                        synch: 0,
+                        mechanical: 0,
+                        performance: 0,
+                        total: 0
+                    };
                 }
+
+                totalBySongwriter[data.name].digital += data.digital;
+                totalBySongwriter[data.name].synch += data.synch;
+                totalBySongwriter[data.name].mechanical += data.mechanical;
+                totalBySongwriter[data.name].performance += data.performance;
+                totalBySongwriter[data.name].total += data.total;
             });
-            
-            Object.values(filteredData).forEach(data => {
+
+            Object.keys(totalBySongwriter).forEach(name => {
+                const data = totalBySongwriter[name];
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.name;
+                row.insertCell(0).textContent = name;
                 row.insertCell(1).textContent = data.digital.toFixed(2);
                 row.insertCell(2).textContent = data.synch.toFixed(2);
                 row.insertCell(3).textContent = data.mechanical.toFixed(2);
@@ -290,4 +300,3 @@
     </script>
 </body>
 </html>
-
