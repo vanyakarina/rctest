@@ -34,6 +34,18 @@
             padding: 8px;
             text-align: left;
         }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -48,24 +60,29 @@
     <div class="content">
         <h1>Royalty Calculation</h1>
         <form id="royaltyForm">
-            <label for="songTitle">Song Title:</label>
-            <select id="songTitle" required>
-                <option value="">Select a song</option>
-                <!-- Options will be filled by JavaScript -->
-            </select>
-            <br><br>
-            <label for="digitalRoyalty">Digital Royalty:</label>
-            <input type="number" id="digitalRoyalty" placeholder="Digital Royalty" required>
-            <br><br>
-            <label for="synchRoyalty">Synch Royalty:</label>
-            <input type="number" id="synchRoyalty" placeholder="Synch Royalty" required>
-            <br><br>
-            <label for="mechanicalRoyalty">Mechanical Royalty:</label>
-            <input type="number" id="mechanicalRoyalty" placeholder="Mechanical Royalty" required>
-            <br><br>
-            <label for="performanceRoyalty">Performance Royalty:</label>
-            <input type="number" id="performanceRoyalty" placeholder="Performance Royalty" required>
-            <br><br>
+            <div class="form-group">
+                <label for="songTitle">Song Title:</label>
+                <select id="songTitle" required>
+                    <option value="">Select a song</option>
+                    <!-- Options will be filled by JavaScript -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="digitalRoyalty">Digital Royalty:</label>
+                <input type="number" id="digitalRoyalty" placeholder="Digital Royalty" required>
+            </div>
+            <div class="form-group">
+                <label for="synchRoyalty">Synch Royalty:</label>
+                <input type="number" id="synchRoyalty" placeholder="Synch Royalty" required>
+            </div>
+            <div class="form-group">
+                <label for="mechanicalRoyalty">Mechanical Royalty:</label>
+                <input type="number" id="mechanicalRoyalty" placeholder="Mechanical Royalty" required>
+            </div>
+            <div class="form-group">
+                <label for="performanceRoyalty">Performance Royalty:</label>
+                <input type="number" id="performanceRoyalty" placeholder="Performance Royalty" required>
+            </div>
             <button type="button" onclick="calculateRoyalty()">Calculate Royalty</button>
         </form>
 
@@ -117,32 +134,26 @@
             }
 
             const song = catalogue.find(s => s.title === songTitle);
-
-            // Calculate total share of signed songwriters
-            const signedSongwriters = song.songwriters.filter(sw => {
-                const songwriter = songwriters.find(s => s.name === sw.name);
-                return songwriter && songwriter.signed && sw.share > 0;
-            });
-
-            const totalShare = signedSongwriters.reduce((sum, sw) => sum + sw.share, 0);
-
-            if (totalShare === 0) {
-                alert('No signed songwriters with shares found for this song.');
-                return;
-            }
+            if (!song) return;
 
             const totalRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
-            const royaltyData = [];
 
+            // Calculate total share of signed songwriters
+            const signedSongwriters = song.songwriters.filter(sw => songwriters.find(s => s.name === sw.name && s.signed));
+            const totalSignedShare = signedSongwriters.reduce((sum, sw) => sum + sw.share, 0);
+
+            let royaltyData = [];
+
+            // Distribute royalties to signed songwriters based on their share
             signedSongwriters.forEach(sw => {
-                const sharePercentage = sw.share / totalShare;
+                const shareRatio = sw.share / totalSignedShare;
                 royaltyData.push({
                     name: sw.name,
                     status: 'Signed',
-                    digitalRoyalty: digitalRoyalty * sharePercentage,
-                    synchRoyalty: synchRoyalty * sharePercentage,
-                    mechanicalRoyalty: mechanicalRoyalty * sharePercentage,
-                    performanceRoyalty: performanceRoyalty * sharePercentage
+                    digital: shareRatio * digitalRoyalty,
+                    synch: shareRatio * synchRoyalty,
+                    mechanical: shareRatio * mechanicalRoyalty,
+                    performance: shareRatio * performanceRoyalty
                 });
             });
 
@@ -156,10 +167,10 @@
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = data.name;
                 row.insertCell(1).textContent = data.status;
-                row.insertCell(2).textContent = data.digitalRoyalty.toFixed(2);
-                row.insertCell(3).textContent = data.synchRoyalty.toFixed(2);
-                row.insertCell(4).textContent = data.mechanicalRoyalty.toFixed(2);
-                row.insertCell(5).textContent = data.performanceRoyalty.toFixed(2);
+                row.insertCell(2).textContent = data.digital.toFixed(2);
+                row.insertCell(3).textContent = data.synch.toFixed(2);
+                row.insertCell(4).textContent = data.mechanical.toFixed(2);
+                row.insertCell(5).textContent = data.performance.toFixed(2);
             });
             document.getElementById('totalRoyalty').textContent = `Total Royalty: $${totalRoyalty.toFixed(2)}`;
         }
