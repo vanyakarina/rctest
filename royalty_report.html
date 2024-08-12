@@ -35,6 +35,7 @@
             text-align: left;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
     <nav>
@@ -49,7 +50,7 @@
 
     <div class="content">
         <h1>Royalty Calculator</h1>
-        <form id="royaltyForm" action="royalty_report_data.html" method="post" target="_blank">
+        <form id="royaltyForm" action="royalty_report_data.html" method="post">
             <h2>Input Royalties</h2>
             <table id="inputTable">
                 <thead>
@@ -99,9 +100,9 @@
         </table>
 
         <h2>Filter by Songwriter</h2>
-        <label for="filterSongwriter">Select Songwriter:</label>
-        <select id="filterSongwriter">
-            <option value="">Select a songwriter</option>
+        <label for="songwriterFilter">Select Songwriter:</label>
+        <select id="songwriterFilter" onchange="filterBySongwriter()">
+            <option value="All">All</option>
             <!-- Options will be filled by JavaScript -->
         </select>
         <button type="button" onclick="filterBySongwriter()">Filter</button>
@@ -213,10 +214,10 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('filterSongwriter').value;
+            const filterSongwriter = document.getElementById('songwriterFilter').value;
             let filteredData = royaltyData;
 
-            if (filterSongwriter) {
+            if (filterSongwriter !== 'All') {
                 filteredData = royaltyData.filter(data => data.name === filterSongwriter);
             }
 
@@ -229,52 +230,27 @@
                 totals[data.name].mechanical += data.mechanical;
                 totals[data.name].performance += data.performance;
                 totals[data.name].total += data.total;
-
                 return totals;
             }, {});
 
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-            Object.keys(songwriterTotals).forEach(name => {
-                const total = songwriterTotals[name];
+            for (const [name, totals] of Object.entries(songwriterTotals)) {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = total.digital.toFixed(2);
-                row.insertCell(2).textContent = total.synch.toFixed(2);
-                row.insertCell(3).textContent = total.mechanical.toFixed(2);
-                row.insertCell(4).textContent = total.performance.toFixed(2);
-                row.insertCell(5).textContent = total.total.toFixed(2);
-            });
-        }
-
-        function filterBySongwriter() {
-            calculateAllRoyalties();
-        }
-
-        function populatePeriodOptions() {
-            const periods = [];
-            for (let year = 2019; year <= 2040; year++) {
-                periods.push(`Jan-Jun ${year}`);
-                periods.push(`Jul-Dec ${year}`);
+                row.insertCell(1).textContent = totals.digital.toFixed(2);
+                row.insertCell(2).textContent = totals.synch.toFixed(2);
+                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
+                row.insertCell(4).textContent = totals.performance.toFixed(2);
+                row.insertCell(5).textContent = totals.total.toFixed(2);
             }
-            const periodSelect = document.getElementById('period');
-            periods.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period;
-                option.textContent = period;
-                periodSelect.appendChild(option);
-            });
         }
 
         function exportData() {
-            const data = JSON.stringify(royalties);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'royalties.json';
-            a.click();
-            URL.revokeObjectURL(url);
+            const ws = XLSX.utils.json_to_sheet(royalties);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Royalties");
+            XLSX.writeFile(wb, "royalty_data.xlsx");
         }
 
         function importData() {
@@ -284,18 +260,40 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     try {
-                        const data = JSON.parse(event.target.result);
-                        royalties = data;
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        royalties = XLSX.utils.sheet_to_json(worksheet);
                         updateRoyaltyTable(royalties);
                         updateFilteredRoyaltyTable(royalties);
                     } catch (e) {
                         alert('Failed to load data.');
                     }
                 };
-                reader.readAsText(file);
+                reader.readAsArrayBuffer(file);
             } else {
                 alert('No file selected.');
             }
+        }
+
+        function populatePeriodOptions() {
+            const periodSelect = document.getElementById('period');
+            let startYear = 2019;
+            let endYear = 2040;
+            let periods = ["Jan-Jun", "Jul-Dec"];
+            
+            for (let year = startYear; year <= endYear; year++) {
+                periods.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = `${period} ${year}`;
+                    option.textContent = `${period} ${year}`;
+                    periodSelect.appendChild(option);
+                });
+            }
+        }
+
+        function filterBySongwriter() {
+            calculateAllRoyalties();
         }
 
         window.onload = function() {
