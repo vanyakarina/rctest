@@ -34,9 +34,6 @@
             padding: 8px;
             text-align: left;
         }
-        .total-row {
-            font-weight: bold;
-        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
@@ -89,14 +86,6 @@
             </thead>
             <tbody>
                 <!-- Royalty data will be added here -->
-                <tr class="total-row">
-                    <td colspan="3">Total</td>
-                    <td id="totalDigital">0.00</td>
-                    <td id="totalSynch">0.00</td>
-                    <td id="totalMechanical">0.00</td>
-                    <td id="totalPerformance">0.00</td>
-                    <td id="totalRoyalty">0.00</td>
-                </tr>
             </tbody>
         </table>
 
@@ -146,11 +135,6 @@
 
         function calculateAllRoyalties() {
             royalties = []; // Reset royalties array
-            let totalDigital = 0;
-            let totalSynch = 0;
-            let totalMechanical = 0;
-            let totalPerformance = 0;
-            let totalRoyalty = 0;
 
             const inputRows = document.querySelectorAll('#inputTable tbody tr');
 
@@ -193,20 +177,14 @@
 
                 songData.forEach(data => {
                     royalties.push(data);
-                    // Aggregate totals
-                    totalDigital += data.digital;
-                    totalSynch += data.synch;
-                    totalMechanical += data.mechanical;
-                    totalPerformance += data.performance;
-                    totalRoyalty += data.total;
                 });
             });
 
-            updateRoyaltyTable(royalties, totalDigital, totalSynch, totalMechanical, totalPerformance, totalRoyalty);
+            updateRoyaltyTable(royalties);
             updateFilteredRoyaltyTable(royalties);
         }
 
-        function updateRoyaltyTable(royaltyData, totalDigital, totalSynch, totalMechanical, totalPerformance, totalRoyalty) {
+        function updateRoyaltyTable(royaltyData) {
             const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
             royaltyData.sort((a, b) => a.songTitle.localeCompare(b.songTitle) || a.name.localeCompare(b.name)); // Sort alphabetically
@@ -221,56 +199,67 @@
                 row.insertCell(6).textContent = data.performance.toFixed(2);
                 row.insertCell(7).textContent = data.total.toFixed(2);
             });
-
-            document.getElementById('totalDigital').textContent = totalDigital.toFixed(2);
-            document.getElementById('totalSynch').textContent = totalSynch.toFixed(2);
-            document.getElementById('totalMechanical').textContent = totalMechanical.toFixed(2);
-            document.getElementById('totalPerformance').textContent = totalPerformance.toFixed(2);
-            document.getElementById('totalRoyalty').textContent = totalRoyalty.toFixed(2);
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const songwriterTotals = {};
-            royaltyData.forEach(data => {
-                if (!songwriterTotals[data.name]) {
-                    songwriterTotals[data.name] = {
-                        digital: 0,
-                        synch: 0,
-                        mechanical: 0,
-                        performance: 0,
-                        total: 0
-                    };
-                }
-                songwriterTotals[data.name].digital += data.digital;
-                songwriterTotals[data.name].synch += data.synch;
-                songwriterTotals[data.name].mechanical += data.mechanical;
-                songwriterTotals[data.name].performance += data.performance;
-                songwriterTotals[data.name].total += data.total;
-            });
+            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
 
-            const filteredTableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
-            filteredTableBody.innerHTML = '';
-            for (const [name, totals] of Object.entries(songwriterTotals)) {
-                const row = filteredTableBody.insertRow();
-                row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = totals.digital.toFixed(2);
-                row.insertCell(2).textContent = totals.synch.toFixed(2);
-                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
-                row.insertCell(4).textContent = totals.performance.toFixed(2);
-                row.insertCell(5).textContent = totals.total.toFixed(2);
-            }
+            const aggregatedData = royaltyData.reduce((acc, data) => {
+                const existing = acc.find(d => d.songwriter === data.name);
+                if (existing) {
+                    existing.totalDigitalRoyalty += data.digital;
+                    existing.totalSynchRoyalty += data.synch;
+                    existing.totalMechanicalRoyalty += data.mechanical;
+                    existing.totalPerformanceRoyalty += data.performance;
+                    existing.totalRoyalty += data.total;
+                } else {
+                    acc.push({
+                        songwriter: data.name,
+                        totalDigitalRoyalty: data.digital,
+                        totalSynchRoyalty: data.synch,
+                        totalMechanicalRoyalty: data.mechanical,
+                        totalPerformanceRoyalty: data.performance,
+                        totalRoyalty: data.total
+                    });
+                }
+                return acc;
+            }, []);
+
+            aggregatedData.sort((a, b) => a.songwriter.localeCompare(b.songwriter)); // Sort alphabetically
+            aggregatedData.forEach(data => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = data.songwriter;
+                row.insertCell(1).textContent = data.totalDigitalRoyalty.toFixed(2);
+                row.insertCell(2).textContent = data.totalSynchRoyalty.toFixed(2);
+                row.insertCell(3).textContent = data.totalMechanicalRoyalty.toFixed(2);
+                row.insertCell(4).textContent = data.totalPerformanceRoyalty.toFixed(2);
+                row.insertCell(5).textContent = data.totalRoyalty.toFixed(2);
+            });
         }
 
         function exportRoyaltyBreakdown() {
-            const table = document.getElementById('royaltyTable');
-            const wb = XLSX.utils.table_to_book(table, { sheet: 'Royalty Breakdown' });
-            XLSX.writeFile(wb, 'royalty_breakdown.xlsx');
+            // Create a workbook and add a worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('royaltyTable'));
+
+            // Add the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Royalty Breakdown");
+
+            // Generate Excel file and trigger download
+            XLSX.writeFile(wb, 'RoyaltyBreakdown.xlsx');
         }
 
         function exportTotalRoyalties() {
-            const table = document.getElementById('filteredRoyaltyTable');
-            const wb = XLSX.utils.table_to_book(table, { sheet: 'Total Royalties' });
-            XLSX.writeFile(wb, 'total_royalties.xlsx');
+            // Create a workbook and add a worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('filteredRoyaltyTable'));
+
+            // Add the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Total Royalties");
+
+            // Generate Excel file and trigger download
+            XLSX.writeFile(wb, 'TotalRoyalties.xlsx');
         }
 
         function importData() {
@@ -278,50 +267,51 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                
-                // Process rows to update royalty data
-                rows.forEach(row => {
-                    if (row[0] && row[1] && row[2] && row[3] && row[4]) {
-                        const songTitle = row[0];
-                        const digital = parseFloat(row[1]) || 0;
-                        const synch = parseFloat(row[2]) || 0;
-                        const mechanical = parseFloat(row[3]) || 0;
-                        const performance = parseFloat(row[4]) || 0;
+                const json = XLSX.utils.sheet_to_json(sheet);
 
-                        const inputRow = Array.from(document.querySelectorAll('#inputTable tbody tr'))
-                            .find(tr => tr.cells[0].textContent === songTitle);
-                        if (inputRow) {
-                            inputRow.querySelector('.digitalRoyalty').value = digital;
-                            inputRow.querySelector('.synchRoyalty').value = synch;
-                            inputRow.querySelector('.mechanicalRoyalty').value = mechanical;
-                            inputRow.querySelector('.performanceRoyalty').value = performance;
-                        }
-                    }
-                });
+                const royalties = json.map(row => ({
+                    songTitle: row['Song Title'],
+                    digital: row['Digital Royalty'] || 0,
+                    synch: row['Synch Royalty'] || 0,
+                    mechanical: row['Mechanical Royalty'] || 0,
+                    performance: row['Performance Royalty'] || 0
+                }));
+
+                updateInputTable(royalties);
             };
             reader.readAsArrayBuffer(file);
         }
 
         function downloadTemplate() {
+            const ws = XLSX.utils.json_to_sheet([
+                { 'Song Title': '', 'Digital Royalty': '', 'Synch Royalty': '', 'Mechanical Royalty': '', 'Performance Royalty': '' }
+            ]);
             const wb = XLSX.utils.book_new();
-            const ws_data = [
-                ['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty'],
-                ['', '', '', '', '']
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, 'Template');
-            XLSX.writeFile(wb, 'royalty_template.xlsx');
+            XLSX.writeFile(wb, 'RoyaltyTemplate.xlsx');
         }
 
-        window.onload = () => {
-            populateSongTitles();
-        };
+        function updateInputTable(royalties) {
+            const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
+            inputTableBody.innerHTML = '';
+
+            royalties.forEach(royalty => {
+                const row = inputTableBody.insertRow();
+                row.insertCell(0).textContent = royalty.songTitle;
+                row.insertCell(1).innerHTML = `<input type="number" value="${royalty.digital}" data-song="${royalty.songTitle}" class="digitalRoyalty" placeholder="Digital Royalty">`;
+                row.insertCell(2).innerHTML = `<input type="number" value="${royalty.synch}" data-song="${royalty.songTitle}" class="synchRoyalty" placeholder="Synch Royalty">`;
+                row.insertCell(3).innerHTML = `<input type="number" value="${royalty.mechanical}" data-song="${royalty.songTitle}" class="mechanicalRoyalty" placeholder="Mechanical Royalty">`;
+                row.insertCell(4).innerHTML = `<input type="number" value="${royalty.performance}" data-song="${royalty.songTitle}" class="performanceRoyalty" placeholder="Performance Royalty">`;
+            });
+        }
+
+        // Initialize page
+        populateSongTitles();
     </script>
 </body>
 </html>
