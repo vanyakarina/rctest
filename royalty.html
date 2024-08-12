@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royalty Calculation</title>
+    <style>
+        input, button { margin-bottom: 10px; padding: 10px; width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <h1>Royalty Calculation</h1>
+    <form id="royaltyForm">
+        <input type="text" id="songTitle" placeholder="Song Title" required>
+        <input type="number" id="totalRoyalties" placeholder="Total Royalties" required>
+        <input type="number" id="totalDigitalRoyalty" placeholder="Total Digital Royalty" required>
+        <input type="number" id="totalSynchRoyalty" placeholder="Total Synch Royalty" required>
+        <input type="number" id="totalPerformanceRoyalty" placeholder="Total Performance Royalty" required>
+        <input type="number" id="totalMechanicalRoyalty" placeholder="Total Mechanical Royalty" required>
+        <button type="button" onclick="calculateRoyalty()">Calculate</button>
+    </form>
+    <div id="royaltyResults"></div>
+</body>
+</html>
