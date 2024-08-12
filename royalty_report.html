@@ -49,6 +49,19 @@
     <div class="content">
         <h1>Royalty Report</h1>
         <form id="royaltyForm">
+            <h2>Select Period</h2>
+            <label for="periodSelect">Period:</label>
+            <select id="periodSelect" required>
+                <option value="">Select a period</option>
+                <option value="2019-01-06">Jan-Jun 19</option>
+                <option value="2019-07-12">Jul-Dec 19</option>
+                <option value="2020-01-06">Jan-Jun 20</option>
+                <option value="2020-07-12">Jul-Dec 20</option>
+                <!-- Add more periods up to 2040 -->
+                <option value="2040-01-06">Jan-Jun 40</option>
+                <option value="2040-07-12">Jul-Dec 40</option>
+            </select>
+            <br><br>
             <h2>Input Royalties</h2>
             <table id="inputTable">
                 <thead>
@@ -73,6 +86,7 @@
         <table id="royaltyTable">
             <thead>
                 <tr>
+                    <th>Song Title</th>
                     <th>Songwriter</th>
                     <th>Status</th>
                     <th>Digital Royalty</th>
@@ -80,7 +94,6 @@
                     <th>Mechanical Royalty</th>
                     <th>Performance Royalty</th>
                     <th>Total Royalty</th>
-                    <th>Song Title</th>
                 </tr>
             </thead>
             <tbody>
@@ -154,8 +167,8 @@
                     const isSigned = songwriter && songwriter.signed;
                     let royalties = {
                         name: sw.name,
-                        status: isSigned ? 'Signed' : 'Unsigned',
                         songTitle: songTitle,
+                        status: isSigned ? 'Signed' : 'Unsigned',
                         digital: 0,
                         synch: 0,
                         mechanical: 0,
@@ -189,14 +202,14 @@
             tableBody.innerHTML = '';
             royaltyData.forEach(data => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.name;
-                row.insertCell(1).textContent = data.status;
-                row.insertCell(2).textContent = data.digital.toFixed(2);
-                row.insertCell(3).textContent = data.synch.toFixed(2);
-                row.insertCell(4).textContent = data.mechanical.toFixed(2);
-                row.insertCell(5).textContent = data.performance.toFixed(2);
-                row.insertCell(6).textContent = data.total.toFixed(2);
-                row.insertCell(7).textContent = data.songTitle;
+                row.insertCell(0).textContent = data.songTitle;
+                row.insertCell(1).textContent = data.name;
+                row.insertCell(2).textContent = data.status;
+                row.insertCell(3).textContent = data.digital.toFixed(2);
+                row.insertCell(4).textContent = data.synch.toFixed(2);
+                row.insertCell(5).textContent = data.mechanical.toFixed(2);
+                row.insertCell(6).textContent = data.performance.toFixed(2);
+                row.insertCell(7).textContent = data.total.toFixed(2);
             });
         }
 
@@ -210,77 +223,4 @@
 
             const songwriterTotals = filteredData.reduce((totals, data) => {
                 if (!totals[data.name]) {
-                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
-                }
-                totals[data.name].digital += data.digital;
-                totals[data.name].synch += data.synch;
-                totals[data.name].mechanical += data.mechanical;
-                totals[data.name].performance += data.performance;
-                totals[data.name].total += data.total;
-                return totals;
-            }, {});
-
-            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            for (let [name, totals] of Object.entries(songwriterTotals)) {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = totals.digital.toFixed(2);
-                row.insertCell(2).textContent = totals.synch.toFixed(2);
-                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
-                row.insertCell(4).textContent = totals.performance.toFixed(2);
-                row.insertCell(5).textContent = totals.total.toFixed(2);
-            }
-        }
-
-        function populateSongwriterFilter() {
-            const filterSelect = document.getElementById('filterSongwriter');
-            songwriters.forEach(sw => {
-                const option = document.createElement('option');
-                option.value = sw.name;
-                option.textContent = sw.name;
-                filterSelect.appendChild(option);
-            });
-        }
-
-        function exportData() {
-            const data = {
-                catalogue,
-                songwriters,
-                royalties
-            };
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'data.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importData() {
-            const file = document.getElementById('importFile').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const data = JSON.parse(event.target.result);
-                    catalogue = data.catalogue;
-                    songwriters = data.songwriters;
-                    royalties = data.royalties;
-                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                    localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                    localStorage.setItem('royalties', JSON.stringify(royalties));
-                    populateSongTitles();
-                    populateSongwriterFilter();
-                    calculateAllRoyalties();
-                };
-                reader.readAsText(file);
-            }
-        }
-
-        // Initialize page
-        populateSongTitles();
-        populateSongwriterFilter();
-    </script>
-</body>
-</html>
+                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0
