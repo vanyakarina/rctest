@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Songwriters Input</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         nav { /* your styles for navigation */ }
         .content { /* your styles for content */ }
-        table { /* your styles for table */ }
-        .edit-button { margin-left: 10px; }
+        .input-form { display: flex; flex-direction: column; }
+        .input-form div { display: flex; align-items: center; margin-bottom: 10px; }
+        .input-form label { margin-right: 10px; width: 150px; }
+        .input-form input, .input-form select { flex: 1; }
     </style>
 </head>
 <body>
@@ -23,29 +24,42 @@
 
     <div class="content">
         <h1>Songwriters Input</h1>
-        <form id="songwriterForm">
-            <h2>Input Songwriter Details</h2>
-            <label for="name">Name:</label>
-            <input type="text" id="name" required>
-
-            <label for="bankName">Bank Name:</label>
-            <input type="text" id="bankName">
-
-            <label for="bankAccount">Bank Account:</label>
-            <input type="text" id="bankAccount">
-
-            <label for="ktpNumber">KTP Number:</label>
-            <input type="text" id="ktpNumber">
-
-            <label for="ipNames">IP Names:</label>
-            <input type="text" id="ipNames" placeholder="Comma separated">
-
-            <label for="ipBases">IP Bases:</label>
-            <input type="text" id="ipBases" placeholder="Comma separated">
-
-            <button type="button" onclick="addOrUpdateSongwriter()">Add/Update Songwriter</button>
+        <form id="songwriterForm" class="input-form">
+            <div>
+                <label for="name">Name:</label>
+                <input type="text" id="name" required>
+            </div>
+            <div>
+                <label for="bankName">Bank Name:</label>
+                <input type="text" id="bankName">
+            </div>
+            <div>
+                <label for="bankAccount">Bank Account:</label>
+                <input type="text" id="bankAccount">
+            </div>
+            <div>
+                <label for="ktpNumber">KTP Number:</label>
+                <input type="text" id="ktpNumber">
+            </div>
+            <div>
+                <label for="ipNames">IP Names:</label>
+                <input type="text" id="ipNames" placeholder="Enter IP Names separated by commas">
+            </div>
+            <div>
+                <label for="ipBases">IP Bases:</label>
+                <input type="text" id="ipBases" placeholder="Enter IP Bases separated by commas">
+            </div>
+            <div>
+                <label for="role">Role:</label>
+                <select id="role">
+                    <option value="A">Author</option>
+                    <option value="C">Composer</option>
+                    <option value="CA">Composer & Author</option>
+                </select>
+            </div>
+            <button type="button" onclick="addToSongwriters()">Add Songwriter</button>
         </form>
-
+        
         <h2>Songwriter List</h2>
         <table id="songwriterTable">
             <thead>
@@ -56,79 +70,56 @@
                     <th>KTP Number</th>
                     <th>IP Names</th>
                     <th>IP Bases</th>
+                    <th>Role</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Songwriter data will be added here -->
+                <!-- Songwriter entries will be shown here -->
             </tbody>
         </table>
     </div>
 
     <script>
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
-        let editIndex = null;
 
-        function addOrUpdateSongwriter() {
+        function addToSongwriters() {
             const name = document.getElementById('name').value;
             const bankName = document.getElementById('bankName').value;
             const bankAccount = document.getElementById('bankAccount').value;
             const ktpNumber = document.getElementById('ktpNumber').value;
-            const ipNames = document.getElementById('ipNames').value.split(',').map(item => item.trim());
-            const ipBases = document.getElementById('ipBases').value.split(',').map(item => item.trim());
+            const ipNames = document.getElementById('ipNames').value;
+            const ipBases = document.getElementById('ipBases').value;
+            const role = document.getElementById('role').value;
 
-            if (editIndex === null) {
-                // Adding new songwriter
-                songwriters.push({ name, bankName, bankAccount, ktpNumber, ipNames, ipBases });
-            } else {
-                // Updating existing songwriter
-                songwriters[editIndex] = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases };
-                editIndex = null;
-            }
+            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, role, status: 'Unsigned' };
 
+            songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             renderSongwriters();
-            document.getElementById('songwriterForm').reset();
         }
 
         function renderSongwriters() {
-            const tableBody = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
+            const songwriterTable = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
+            songwriterTable.innerHTML = '';
 
             songwriters.forEach((sw, index) => {
-                const row = tableBody.insertRow();
+                const row = songwriterTable.insertRow();
                 row.insertCell(0).textContent = sw.name;
                 row.insertCell(1).textContent = sw.bankName;
                 row.insertCell(2).textContent = sw.bankAccount;
                 row.insertCell(3).textContent = sw.ktpNumber;
-                row.insertCell(4).textContent = sw.ipNames.join(', ');
-                row.insertCell(5).textContent = sw.ipBases.join(', ');
-
-                const actionsCell = row.insertCell(6);
-                const editButton = document.createElement('button');
-                editButton.textContent = 'Edit';
-                editButton.className = 'edit-button';
-                editButton.onclick = () => editSongwriter(index);
-                actionsCell.appendChild(editButton);
-
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete';
-                deleteButton.className = 'edit-button';
-                deleteButton.onclick = () => deleteSongwriter(index);
-                actionsCell.appendChild(deleteButton);
+                row.insertCell(4).textContent = sw.ipNames;
+                row.insertCell(5).textContent = sw.ipBases;
+                row.insertCell(6).textContent = sw.role;
+                row.insertCell(7).textContent = sw.status;
+                row.insertCell(8).innerHTML = `<button onclick="editSongwriter(${index})">Edit</button> <button onclick="deleteSongwriter(${index})">Delete</button>`;
             });
         }
 
         function editSongwriter(index) {
-            const sw = songwriters[index];
-            document.getElementById('name').value = sw.name;
-            document.getElementById('bankName').value = sw.bankName;
-            document.getElementById('bankAccount').value = sw.bankAccount;
-            document.getElementById('ktpNumber').value = sw.ktpNumber;
-            document.getElementById('ipNames').value = sw.ipNames.join(', ');
-            document.getElementById('ipBases').value = sw.ipBases.join(', ');
-
-            editIndex = index;
+            // Implement edit functionality
         }
 
         function deleteSongwriter(index) {
