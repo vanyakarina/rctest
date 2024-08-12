@@ -38,7 +38,7 @@
             display: block;
             margin: 5px 0;
         }
-        input {
+        input, select {
             width: calc(100% - 22px);
             padding: 8px;
             margin: 5px 0 15px 0;
@@ -81,12 +81,6 @@
         .ip-names-table th, .ip-base-table th {
             background-color: #f2f2f2;
         }
-        .export-import-buttons {
-            margin-bottom: 20px;
-        }
-        .export-import-buttons button {
-            margin-right: 10px;
-        }
     </style>
 </head>
 <body>
@@ -101,23 +95,26 @@
 
     <div class="container">
         <h1>Songwriters</h1>
-        <div class="export-import-buttons">
-            <button onclick="exportToExcel()">Export to Excel</button>
-            <input type="file" id="importFile" accept=".xlsx" onchange="importFromExcel()">
-        </div>
         <form id="songwriterForm">
             <label for="name">Name:</label>
             <input type="text" id="name" placeholder="Songwriter Name" required>
-            <label for="ipNames">IP Names (comma separated):</label>
-            <input type="text" id="ipNames" placeholder="IP Names (comma separated)">
+            <label for="bankName">Bank Name:</label>
+            <input type="text" id="bankName" placeholder="Bank Name" required>
+            <label for="bankAccount">Bank Account:</label>
+            <input type="text" id="bankAccount" placeholder="Bank Account" required>
+            <label for="ktpNumber">KTP Number:</label>
+            <input type="text" id="ktpNumber" placeholder="KTP Number" required>
+            
+            <div id="ipNamesContainer">
+                <label for="ipName">IP Name:</label>
+                <input type="text" id="ipName" placeholder="IP Name">
+                <label for="ipNumber">IP Number:</label>
+                <input type="text" id="ipNumber" placeholder="IP Number">
+                <button type="button" onclick="addIPName()">Add IP Name</button>
+            </div>
+
             <label for="ipBase">IP Base (if applicable):</label>
             <input type="text" id="ipBase" placeholder="IP Base">
-            <label for="idNumber">ID Number:</label>
-            <input type="text" id="idNumber" placeholder="ID Number" required>
-            <label for="bankName">Bank Name:</label>
-            <input type="text" id="bankName" placeholder="Bank Name">
-            <label for="bankAccount">Bank Account Number:</label>
-            <input type="text" id="bankAccount" placeholder="Bank Account Number">
             <button type="button" onclick="submitSongwriter()">Submit Songwriter</button>
         </form>
 
@@ -126,11 +123,11 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Bank Name</th>
+                    <th>Bank Account</th>
+                    <th>KTP Number</th>
                     <th>IP Names</th>
                     <th>IP Base</th>
-                    <th>ID Number</th>
-                    <th>Bank Name</th>
-                    <th>Bank Account Number</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -139,21 +136,30 @@
                 <!-- Songwriter data will be added here -->
             </tbody>
         </table>
+        <button onclick="exportToExcel()">Export to Excel</button>
+        <button onclick="importFromExcel()">Import from Excel</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script>
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
         function submitSongwriter() {
             const name = document.getElementById('name').value;
-            const ipNames = document.getElementById('ipNames').value.split(',').map(name => name.trim());
-            const ipBase = document.getElementById('ipBase').value;
-            const idNumber = document.getElementById('idNumber').value;
             const bankName = document.getElementById('bankName').value;
             const bankAccount = document.getElementById('bankAccount').value;
+            const ktpNumber = document.getElementById('ktpNumber').value;
+            const ipBase = document.getElementById('ipBase').value;
 
-            const songwriter = { name, ipNames, ipBase, idNumber, bankName, bankAccount, signed: true };
+            const ipNames = [];
+            const ipNumbers = [];
+            document.querySelectorAll('.ip-names').forEach((input) => {
+                ipNames.push(input.value);
+            });
+            document.querySelectorAll('.ip-numbers').forEach((input) => {
+                ipNumbers.push(input.value);
+            });
+
+            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipNumbers, ipBase, signed: true };
             songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
@@ -168,12 +174,33 @@
                 row.insertCell(0).textContent = sw.name;
                 row.insertCell(1).textContent = sw.ipNames.join(', ');
                 row.insertCell(2).textContent = sw.ipBase;
-                row.insertCell(3).textContent = sw.idNumber;
-                row.insertCell(4).textContent = sw.bankName;
-                row.insertCell(5).textContent = sw.bankAccount;
+                row.insertCell(3).textContent = sw.bankName;
+                row.insertCell(4).textContent = sw.bankAccount;
+                row.insertCell(5).textContent = sw.ktpNumber;
                 row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
                 row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
+        }
+
+        function addIPName() {
+            const ipName = document.getElementById('ipName').value;
+            const ipNumber = document.getElementById('ipNumber').value;
+            if (ipName && ipNumber) {
+                const container = document.createElement('div');
+                container.className = 'ip-entry';
+                container.innerHTML = `
+                    <input type="text" class="ip-names" value="${ipName}" readonly>
+                    <input type="text" class="ip-numbers" value="${ipNumber}" readonly>
+                    <button onclick="removeIPName(this)">Remove</button>
+                `;
+                document.getElementById('ipNamesContainer').appendChild(container);
+                document.getElementById('ipName').value = '';
+                document.getElementById('ipNumber').value = '';
+            }
+        }
+
+        function removeIPName(button) {
+            button.parentElement.remove();
         }
 
         function editSongwriter(index) {
@@ -187,31 +214,13 @@
         }
 
         function exportToExcel() {
-            const ws = XLSX.utils.json_to_sheet(songwriters);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Songwriters");
-            XLSX.writeFile(wb, "songwriters.xlsx");
+            // Functionality to export songwriters to Excel
+            // Use a library like SheetJS (xlsx) for actual implementation
         }
 
         function importFromExcel() {
-            const file = document.getElementById('importFile').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
-                    songwriters = json.map(sw => ({
-                        ...sw,
-                        signed: true // Assume imported songwriters are signed
-                    }));
-                    localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                    updateSongwriterTable();
-                };
-                reader.readAsArrayBuffer(file);
-            }
+            // Functionality to import songwriters from Excel
+            // Use a library like SheetJS (xlsx) for actual implementation
         }
 
         // Initialize the page
