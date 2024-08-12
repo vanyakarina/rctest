@@ -99,15 +99,6 @@
             </tbody>
         </table>
 
-        <h2>Filter by Songwriter</h2>
-        <label for="songwriterFilter">Select Songwriter:</label>
-        <select id="songwriterFilter" onchange="filterBySongwriter()">
-            <option value="All">All</option>
-            <!-- Options will be filled by JavaScript -->
-        </select>
-        <button type="button" onclick="filterBySongwriter()">Filter</button>
-        <br><br>
-
         <h2>Total Royalties by Songwriter</h2>
         <table id="filteredRoyaltyTable">
             <thead>
@@ -126,9 +117,10 @@
         </table>
 
         <br>
-        <button onclick="exportData()">Export Data</button>
+        <button onclick="exportRoyaltyBreakdown()">Export Royalty Breakdown</button>
+        <button onclick="exportTotalRoyalties()">Export Total Royalties</button>
         <input type="file" id="importFile" />
-        <button onclick="importData()">Import Data</button>
+        <button onclick="importData()">Import Royalties</button>
         <button onclick="downloadTemplate()">Download Template</button>
     </div>
 
@@ -226,81 +218,82 @@
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
             
-            filteredData.forEach(data => {
+            filteredData.reduce((acc, data) => {
+                const existing = acc.find(d => d.songwriter === data.name);
+                if (existing) {
+                    existing.totalDigitalRoyalty += data.digital;
+                    existing.totalSynchRoyalty += data.synch;
+                    existing.totalMechanicalRoyalty += data.mechanical;
+                    existing.totalPerformanceRoyalty += data.performance;
+                    existing.totalRoyalty += data.total;
+                } else {
+                    acc.push({
+                        songwriter: data.name,
+                        totalDigitalRoyalty: data.digital,
+                        totalSynchRoyalty: data.synch,
+                        totalMechanicalRoyalty: data.mechanical,
+                        totalPerformanceRoyalty: data.performance,
+                        totalRoyalty: data.total
+                    });
+                }
+                return acc;
+            }, []).forEach(data => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.name;
-                row.insertCell(1).textContent = data.digital.toFixed(2);
-                row.insertCell(2).textContent = data.synch.toFixed(2);
-                row.insertCell(3).textContent = data.mechanical.toFixed(2);
-                row.insertCell(4).textContent = data.performance.toFixed(2);
-                row.insertCell(5).textContent = data.total.toFixed(2);
+                row.insertCell(0).textContent = data.songwriter;
+                row.insertCell(1).textContent = data.totalDigitalRoyalty.toFixed(2);
+                row.insertCell(2).textContent = data.totalSynchRoyalty.toFixed(2);
+                row.insertCell(3).textContent = data.totalMechanicalRoyalty.toFixed(2);
+                row.insertCell(4).textContent = data.totalPerformanceRoyalty.toFixed(2);
+                row.insertCell(5).textContent = data.totalRoyalty.toFixed(2);
             });
         }
 
         function saveRoyaltyReport(event) {
             event.preventDefault();
-
-            const royaltiesData = [];
-            const rows = document.querySelectorAll('#royaltyTable tbody tr');
-            rows.forEach(row => {
-                const data = {
-                    songTitle: row.cells[0].textContent,
-                    songwriter: row.cells[1].textContent,
-                    status: row.cells[2].textContent,
-                    digitalRoyalty: parseFloat(row.cells[3].textContent),
-                    synchRoyalty: parseFloat(row.cells[4].textContent),
-                    mechanicalRoyalty: parseFloat(row.cells[5].textContent),
-                    performanceRoyalty: parseFloat(row.cells[6].textContent),
-                    totalRoyalty: parseFloat(row.cells[7].textContent),
-                };
-                royaltiesData.push(data);
-            });
-
             const period = document.getElementById('period').value;
-            localStorage.setItem(`royaltyReport_${period}`, JSON.stringify(royaltiesData));
+            localStorage.setItem(`royaltyReport_${period}`, JSON.stringify(royalties));
             alert('Royalty report saved!');
         }
 
-        function filterBySongwriter() {
-            calculateAllRoyalties();
-        }
-
-        function exportData() {
+        function exportRoyaltyBreakdown() {
             const wb = XLSX.utils.book_new();
             let ws = XLSX.utils.json_to_sheet(royalties);
             XLSX.utils.book_append_sheet(wb, ws, "Royalty Breakdown");
+            XLSX.writeFile(wb, "RoyaltyBreakdown.xlsx");
+        }
 
-            ws = XLSX.utils.json_to_sheet(
-                royalties.reduce((acc, data) => {
-                    const existing = acc.find(d => d.songwriter === data.name);
-                    if (existing) {
-                        existing.digitalRoyalty += data.digital;
-                        existing.synchRoyalty += data.synch;
-                        existing.mechanicalRoyalty += data.mechanical;
-                        existing.performanceRoyalty += data.performance;
-                        existing.totalRoyalty += data.total;
-                    } else {
-                        acc.push({
-                            songwriter: data.name,
-                            totalDigitalRoyalty: data.digital,
-                            totalSynchRoyalty: data.synch,
-                            totalMechanicalRoyalty: data.mechanical,
-                            totalPerformanceRoyalty: data.performance,
-                            totalRoyalty: data.total
-                        });
-                    }
-                    return acc;
-                }, [])
-            );
+        function exportTotalRoyalties() {
+            const totalRoyalties = royalties.reduce((acc, data) => {
+                const existing = acc.find(d => d.songwriter === data.name);
+                if (existing) {
+                    existing.totalDigitalRoyalty += data.digital;
+                    existing.totalSynchRoyalty += data.synch;
+                    existing.totalMechanicalRoyalty += data.mechanical;
+                    existing.totalPerformanceRoyalty += data.performance;
+                    existing.totalRoyalty += data.total;
+                } else {
+                    acc.push({
+                        songwriter: data.name,
+                        totalDigitalRoyalty: data.digital,
+                        totalSynchRoyalty: data.synch,
+                        totalMechanicalRoyalty: data.mechanical,
+                        totalPerformanceRoyalty: data.performance,
+                        totalRoyalty: data.total
+                    });
+                }
+                return acc;
+            }, []);
+
+            const wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.json_to_sheet(totalRoyalties);
             XLSX.utils.book_append_sheet(wb, ws, "Total Royalties by Songwriter");
-            
-            XLSX.writeFile(wb, "RoyaltyReport.xlsx");
+            XLSX.writeFile(wb, "TotalRoyalties.xlsx");
         }
 
         function importData() {
             const fileInput = document.getElementById('importFile');
             const file = fileInput.files[0];
-            
+
             if (!file) {
                 alert('Please select a file.');
                 return;
@@ -312,9 +305,24 @@
                 const wb = XLSX.read(data, { type: 'binary' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const json = XLSX.utils.sheet_to_json(ws);
-                console.log(json);
                 // Process imported data
-                // You can parse and update the table as needed
+                json.forEach(row => {
+                    const songTitle = row['Song Title'];
+                    const digitalRoyalty = parseFloat(row['Digital Royalty']) || 0;
+                    const synchRoyalty = parseFloat(row['Synch Royalty']) || 0;
+                    const mechanicalRoyalty = parseFloat(row['Mechanical Royalty']) || 0;
+                    const performanceRoyalty = parseFloat(row['Performance Royalty']) || 0;
+                    
+                    const rowElements = document.querySelectorAll(`#inputTable tbody tr`);
+                    rowElements.forEach(rowElement => {
+                        if (rowElement.cells[0].textContent === songTitle) {
+                            rowElement.querySelector('.digitalRoyalty').value = digitalRoyalty;
+                            rowElement.querySelector('.synchRoyalty').value = synchRoyalty;
+                            rowElement.querySelector('.mechanicalRoyalty').value = mechanicalRoyalty;
+                            rowElement.querySelector('.performanceRoyalty').value = performanceRoyalty;
+                        }
+                    });
+                });
             };
             reader.readAsBinaryString(file);
         }
