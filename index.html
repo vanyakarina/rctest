@@ -3,51 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Songwriter Royalty Calculator</title>
+    <title>Music Publishing Admin</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input, select, button {
-            margin-bottom: 10px;
-            padding: 10px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-        }
+        body { font-family: Arial, sans-serif; }
+        nav { margin-bottom: 20px; }
+        nav a { margin: 0 15px; text-decoration: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Songwriter Royalty Calculator</h1>
-        <h3>Enter Songwriter Data</h3>
-        <form id="songwriterForm">
-            <input type="text" id="songTitle" placeholder="Song Title" required>
-            <input type="text" id="recordLabel" placeholder="Record Label" required>
-            <input type="text" id="songwriterName" placeholder="Songwriter Name" required>
-            <input type="number" id="sharePercentage" placeholder="Share (%)" min="0" max="100" required>
-            <select id="role">
-                <option value="A">Author</option>
-                <option value="C">Composer</option>
-            </select>
-            <select id="isSigned">
-                <option value="true">Signed</option>
-                <option value="false">Unsigned</option>
-            </select>
-            <button type="button" onclick="addSongwriter()">Add Songwriter</button>
-        </form>
-        <h3>Songwriter List</h3>
-        <ul id="songwriterList"></ul>
-        <h3>Enter Total Royalties</h3>
-        <input type="number" id="totalRoyalty" placeholder="Total Royalty ($)" required>
-        <button type="button" onclick="calculateRoyalties()">Calculate Royalties</button>
-        <h3>Royalty Distribution</h3>
-        <ul id="royaltyDistribution"></ul>
-    </div>
-    <script src="script.js"></script>
+    <nav>
+        <a href="catalogue.html">Catalogue List</a>
+        <a href="songwriters.html">Songwriter List</a>
+        <a href="royalty.html">Royalty Calculation</a>
+        <a href="status.html">Songwriter Status</a>
+    </nav>
+    <h1>Welcome to Music Publishing Admin</h1>
+    <p>Use the navigation above to manage your catalog and songwriters.</p>
 </body>
 </html>
+
