@@ -4,36 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catalogue Input</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        nav {
-            background-color: #333;
-            padding: 10px;
-            color: white;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            padding: 14px 20px;
-            display: inline-block;
-        }
-        nav a:hover {
-            background-color: #575757;
-        }
-        .content {
-            margin: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
+        nav { /* your styles */ }
+        .content { /* your styles */ }
+        table { /* your styles */ }
     </style>
 </head>
 <body>
@@ -42,16 +17,22 @@
         <a href="songwriters.html">Songwriters Input</a>
         <a href="catalogue.html">Catalogue Input</a>
         <a href="royalty.html">Royalty Calculation</a>
+        <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
     <div class="content">
-        <h1>Input Catalogue Data</h1>
+        <h1>Catalogue Input</h1>
         <form id="catalogueForm">
-            <input type="text" id="songTitle" placeholder="Song Title" required>
-            <input type="text" id="songSinger" placeholder="Singer" required>
-            <input type="text" id="songLabel" placeholder="Record Label" required>
-            <input type="text" id="songDistributor" placeholder="Distributor" required>
-            <input type="text" id="songISRC" placeholder="ISRC" required>
+            <label for="title">Song Title:</label>
+            <input type="text" id="title" required>
+            <label for="singer">Singer:</label>
+            <input type="text" id="singer" required>
+            <label for="releaseDate">Release Date:</label>
+            <input type="date" id="releaseDate" required>
+            <label for="distributor">Distributor:</label>
+            <input type="text" id="distributor" required>
+            <label for="isrc">ISRC:</label>
+            <input type="text" id="isrc" required>
             <button type="button" onclick="addSong()">Add Song</button>
         </form>
 
@@ -61,57 +42,40 @@
                 <tr>
                     <th>Title</th>
                     <th>Singer</th>
-                    <th>Record Label</th>
+                    <th>Release Date</th>
                     <th>Distributor</th>
                     <th>ISRC</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Catalogue data will be added here -->
+                <!-- Catalogue items will be added here -->
             </tbody>
         </table>
+
+        <button onclick="exportToExcel('catalogue', catalogue)">Export Catalogue to Excel</button>
+        <input type="file" id="importFile" accept=".xlsx" onchange="importFromExcel(event, 'catalogue')"/>
     </div>
 
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
 
-        function addSong() {
-            const title = document.getElementById('songTitle').value;
-            const singer = document.getElementById('songSinger').value;
-            const label = document.getElementById('songLabel').value;
-            const distributor = document.getElementById('songDistributor').value;
-            const isrc = document.getElementById('songISRC').value;
-
-            if (title && singer && label && distributor && isrc) {
-                const song = { title, singer, label, distributor, isrc };
-                catalogue.push(song);
-                localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                updateCatalogueTable();
-                clearCatalogueForm();
-            } else {
-                alert('Please fill in all fields.');
-            }
-        }
-
-        function updateCatalogueTable() {
+        function renderCatalogue() {
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-            catalogue.forEach(song => {
+
+            catalogue.forEach((song, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = song.title;
                 row.insertCell(1).textContent = song.singer;
-                row.insertCell(2).textContent = song.label;
+                row.insertCell(2).textContent = song.releaseDate;
                 row.insertCell(3).textContent = song.distributor;
                 row.insertCell(4).textContent = song.isrc;
+                const deleteCell = row.insertCell(5);
+                deleteCell.innerHTML = `<button onclick="deleteSong(${index})">Delete</button>`;
             });
         }
 
-        function clearCatalogueForm() {
-            document.getElementById('catalogueForm').reset();
-        }
-
-        // Initialize page with song data
-        updateCatalogueTable();
-    </script>
-</body>
-</html>
+        function addSong() {
+            const title = document.getElementById('title').value;
+            const
