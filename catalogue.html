@@ -3,28 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogue List</title>
+    <title>Catalogue Input</title>
     <style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
-    <h1>Catalogue List</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Song Title</th>
-                <th>Songwriters</th>
-                <th>Release Date</th>
-                <th>Distributor</th>
-                <th>ISRC</th>
-            </tr>
-        </thead>
-        <tbody id="catalogueTable">
-            <!-- Dynamic rows will be added here using JavaScript -->
-        </tbody>
-    </table>
-    <!-- Form to add new songs can be included here -->
-</body>
-</html>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="songwriter.html">Songwriter Input</a>
+        <a href="catalogue.html">Catalogue Input</a>
+        <a href="royalty.html">Royalty Calculation</a>
+    </nav>
+
+    <div class="content">
+        <h1>Input Catalogue Data</h1>
+        <form id="catalogueForm">
+            <input type="text" id="songTitle" placeholder="Song Title" required>
+            <input type="text" id="recordLabel" placeholder="Record Label" required>
+            <input type="text" id="distributor" placeholder="Distributor" required>
+            <input type="date" id="releaseDate" placeholder="Release Date" required>
+            <input type="text" id="isrc" placeholder="ISRC" required>
+            <label for="songwriterSelect">Select Songwriters:</label>
+            <select id="songwriterSelect" multiple></select>
+            <input type="text" id="role" placeholder="Role (A, C, CA)" required>
+            <input type="number" id="share" placeholder="Share (%)" required>
+            <button type="button" onclick="addCatalogue()">Add to Catalogue</button>
+        </form>
+
+        <h2>Catalogue List</h2>
+        <table id="catalogueTable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Record Label</th>
+                    <th>Distributor</th>
+                    <th>Release Date</th>
+                    <th>ISRC</th>
+                    <th>Songwriters</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Catalogue data will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+        let catalogue = [];
+
+        function updateSongwriterSelect() {
+            const select = document.getElementById('songwriterSelect');
+            select.innerHTML = '';
+            songwriters.forEach(sw => {
+                const option = document.createElement('option');
+                option.value = sw.name;
+                option.text = sw.name;
+                select.add(option);
+            });
+        }
+
+        function addCatalogue() {
+            const title = document.getElementById('songTitle').value;
+            const label = document.getElementById('recordLabel').value;
+            const distributor = document.getElementById('distributor').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const isrc = document.getElementById('isrc').value;
+            const selectedOptions = document.getElementById('songwriterSelect').selectedOptions;
+            const role = document.getElementById('role').value;
+            const share = parseFloat(document.getElementById('share').value);
+
+            if (title && label && distributor && releaseDate && isrc && role && !isNaN(share)) {
+                const song = { title, label, distributor, releaseDate, isrc, songwriters: [] };
+
+                for (let option of selectedOptions) {
+                    const name = option.value;
+                    song.songwriters.push({ name, role, share });
+                }
+
+                catalogue.push(song);
+                updateCatalogueTable();
+                clearCatalogueForm();
+            } else {
+                alert('Please fill in all fields correctly.');
+            }
+        }
+
+        function updateCatalogueTable() {
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            catalogue.forEach(song => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = song.title;
+                row.insertCell(1).textContent = song.label;
+                row.insertCell(2).textContent = song.distributor;
+                row.insertCell(3).textContent = song.releaseDate;
+                row.insertCell(4).textContent = song.isrc;
+                row.insertCell(5).textContent = song.songwriters.map(sw => `${sw.name} (${sw.role}, ${sw
