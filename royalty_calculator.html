@@ -87,7 +87,7 @@
         </table>
 
         <h2>Total Royalty</h2>
-        <p id="totalRoyalty">Total Royalty: $0.00</p>
+        <p id="totalRoyalty">Total Royalty: Rp0.00</p>
     </div>
 
     <script>
@@ -117,39 +117,61 @@
             }
 
             const song = catalogue.find(s => s.title === songTitle);
-            const totalDigitalRoyalty = digitalRoyalty;
-            const totalSynchRoyalty = synchRoyalty;
-            const totalMechanicalRoyalty = mechanicalRoyalty;
-            const totalPerformanceRoyalty = performanceRoyalty;
 
+            // Calculate total royalty
+            const totalRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
+
+            // Calculate total share of signed songwriters
+            let signedSongwriters = song.songwriters.filter(sw => {
+                const songwriter = songwriters.find(s => s.name === sw.name);
+                return songwriter && songwriter.signed;
+            });
+
+            const totalSignedShare = signedSongwriters.reduce((total, sw) => total + sw.share, 0);
+
+            // Calculate royalties
             let royaltyData = [];
-            let totalRoyalty = 0;
-
             song.songwriters.forEach(sw => {
                 const songwriter = songwriters.find(s => s.name === sw.name);
                 const share = sw.share;
                 const isSigned = songwriter && songwriter.signed;
+                const signedShare = isSigned ? (share / totalSignedShare) * 100 : 0;
 
-                if (share > 0) {
-                    let digital = (share / 100) * totalDigitalRoyalty;
-                    let synch = (share / 100) * totalSynchRoyalty;
-                    let mechanical = (share / 100) * totalMechanicalRoyalty;
-                    let performance = (share / 100) * totalPerformanceRoyalty;
-
-                    if (!isSigned) {
-                        digital = synch = mechanical = performance = 0;
-                    }
-
-                    totalRoyalty += digital + synch + mechanical + performance;
-
+                if (isSigned) {
                     royaltyData.push({
                         name: sw.name,
-                        status: isSigned ? 'Signed' : 'Unsigned',
-                        digital,
-                        synch,
-                        mechanical,
-                        performance
+                        status: 'Signed',
+                        digital: (digitalRoyalty * signedShare / 100).toFixed(2),
+                        synch: (synchRoyalty * signedShare / 100).toFixed(2),
+                        mechanical: (mechanicalRoyalty * signedShare / 100).toFixed(2),
+                        performance: (performanceRoyalty * signedShare / 100).toFixed(2),
                     });
+                } else {
+                    // Add data for unsigned songwriters to calculate their share in total
+                    royaltyData.push({
+                        name: sw.name,
+                        status: 'Unsigned',
+                        digital: '0.00',
+                        synch: '0.00',
+                        mechanical: '0.00',
+                        performance: '0.00',
+                    });
+                }
+            });
+
+            // Distribute royalties to signed songwriters
+            let totalRoyaltyDistribution = signedSongwriters.reduce((acc, sw) => {
+                const share = sw.share / totalSignedShare * 100;
+                return acc + (digitalRoyalty * share / 100) + (synchRoyalty * share / 100) + (mechanicalRoyalty * share / 100) + (performanceRoyalty * share / 100);
+            }, 0);
+
+            // Update royalty data for signed songwriters
+            royaltyData.forEach(data => {
+                if (data.status === 'Signed') {
+                    data.digital = (digitalRoyalty * (data.digital / totalRoyaltyDistribution)).toFixed(2);
+                    data.synch = (synchRoyalty * (data.synch / totalRoyaltyDistribution)).toFixed(2);
+                    data.mechanical = (mechanicalRoyalty * (data.mechanical / totalRoyaltyDistribution)).toFixed(2);
+                    data.performance = (performanceRoyalty * (data.performance / totalRoyaltyDistribution)).toFixed(2);
                 }
             });
 
@@ -163,12 +185,12 @@
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = data.name;
                 row.insertCell(1).textContent = data.status;
-                row.insertCell(2).textContent = data.digital.toFixed(2);
-                row.insertCell(3).textContent = data.synch.toFixed(2);
-                row.insertCell(4).textContent = data.mechanical.toFixed(2);
-                row.insertCell(5).textContent = data.performance.toFixed(2);
+                row.insertCell(2).textContent = data.digital;
+                row.insertCell(3).textContent = data.synch;
+                row.insertCell(4).textContent = data.mechanical;
+                row.insertCell(5).textContent = data.performance;
             });
-            document.getElementById('totalRoyalty').textContent = `Total Royalty: $${totalRoyalty.toFixed(2)}`;
+            document.getElementById('totalRoyalty').textContent = `Total Royalty: Rp${totalRoyalty.toFixed(2)}`;
         }
 
         // Initialize the page
