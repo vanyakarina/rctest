@@ -20,8 +20,6 @@
             background-color: #f2f2f2;
         }
     </style>
-    <!-- Include ExcelJS library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -33,7 +31,6 @@
 </select>
 
 <button onclick="calculateRoyalty()">Generate Report</button>
-<button onclick="exportToExcel()">Export to Excel</button>
 
 <table id="royaltyTable">
     <thead>
@@ -123,59 +120,6 @@
                 writerRow.insertCell(6).textContent = signed === 'Signed' ? performance.toFixed(2) : '0.00';
                 writerRow.insertCell(7).textContent = signed === 'Signed' ? total.toFixed(2) : '0.00';
             });
-        });
-    }
-
-    function exportToExcel() {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Royalty Report');
-
-        // Adding header row
-        worksheet.columns = [
-            { header: 'Song Title', key: 'title', width: 30 },
-            { header: 'Songwriter', key: 'writer', width: 30 },
-            { header: 'Status', key: 'status', width: 15 },
-            { header: 'Digital Royalty', key: 'digital', width: 20 },
-            { header: 'Synch Royalty', key: 'synch', width: 20 },
-            { header: 'Mechanical Royalty', key: 'mechanical', width: 20 },
-            { header: 'Performance Royalty', key: 'performance', width: 20 },
-            { header: 'Total Royalty', key: 'total', width: 20 }
-        ];
-
-        // Adding data rows
-        songTitles.forEach(song => {
-            songwriters.forEach(writer => {
-                const signed = writer.signed ? 'Signed' : 'Unsigned';
-                const share = song.shares[writer.name] || 0;
-
-                const digital = (song.royalties.digital * share) / 100;
-                const synch = (song.royalties.synch * share) / 100;
-                const mechanical = (song.royalties.mechanical * share) / 100;
-                const performance = (song.royalties.performance * share) / 100;
-                const total = digital + synch + mechanical + performance;
-
-                worksheet.addRow({
-                    title: song.title,
-                    writer: writer.name,
-                    status: signed,
-                    digital: signed === 'Signed' ? digital.toFixed(2) : '0.00',
-                    synch: signed === 'Signed' ? synch.toFixed(2) : '0.00',
-                    mechanical: signed === 'Signed' ? mechanical.toFixed(2) : '0.00',
-                    performance: signed === 'Signed' ? performance.toFixed(2) : '0.00',
-                    total: signed === 'Signed' ? total.toFixed(2) : '0.00'
-                });
-            });
-        });
-
-        // Exporting the workbook
-        workbook.xlsx.writeBuffer().then((data) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = 'Royalty_Report.xlsx';
-            anchor.click();
-            window.URL.revokeObjectURL(url);
         });
     }
 
