@@ -4,65 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Royalty Report Data</title>
-    <style>
-        nav {
-            background-color: #333;
-            padding: 10px;
-            color: white;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            padding: 14px 20px;
-            display: inline-block;
-        }
-        nav a:hover {
-            background-color: #575757;
-        }
-        .content {
-            margin: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav>
-        <a href="index.html">Home</a>
-        <a href="catalogue_input.html">Catalogue Registration</a>
-        <a href="catalogue_list.html">Works</a>
-        <a href="songwriters.html">Songwriters</a>
-        <a href="royalty_calculator.html">Royalty Calculator</a>
-        <a href="royalty_report.html">Royalty Report</a>
-        <a href="royalty_report_data.html">Royalty Report Data</a>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="catalogue_registration.html">Catalogue Registration</a></li>
+            <li><a href="works.html">Works</a></li>
+            <li><a href="songwriters.html">Songwriters</a></li>
+            <li><a href="royalty_calculator.html">Royalty Calculator</a></li>
+            <li><a href="royalty_report.html">Royalty Report</a></li>
+            <li><a href="royalty_report_data.html">Royalty Report Data</a></li>
+        </ul>
     </nav>
 
-    <div class="content">
-        <h1>Royalty Report Data</h1>
+    <h1>Royalty Report Data</h1>
 
-        <h2>Select Period</h2>
-        <select id="periodSelect">
-            <!-- Options will be filled by JavaScript -->
-        </select>
-        <br><br>
+    <label for="period-select">Select Period:</label>
+    <select id="period-select" onchange="loadRoyaltyData()">
+        <option value="">-- Select a period --</option>
+        <!-- Add periods here, same as in royalty_report.html -->
+        <!-- Example options -->
+        <option value="Jan-Jun 2019">Jan-Jun 2019</option>
+        <option value="Jul-Dec 2019">Jul-Dec 2019</option>
+        <!-- Add more periods as necessary -->
+    </select>
 
+    <div id="royalty-breakdown">
         <h2>Royalty Breakdown</h2>
-        <table id="royaltyTable">
+        <table id="breakdown-table">
             <thead>
                 <tr>
                     <th>Song Title</th>
-                    <th>Songwriter</th>
-                    <th>Status</th>
+                    <th>Composer</th>
+                    <th>Share (%)</th>
                     <th>Digital Royalty</th>
                     <th>Synch Royalty</th>
                     <th>Mechanical Royalty</th>
@@ -71,60 +47,77 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Royalty data will be added here -->
+                <!-- Data will be loaded here dynamically -->
             </tbody>
         </table>
     </div>
 
+    <div id="total-royalties">
+        <h2>Total Royalties by Songwriter</h2>
+        <table id="total-royalties-table">
+            <thead>
+                <tr>
+                    <th>Songwriter</th>
+                    <th>Digital Royalty</th>
+                    <th>Synch Royalty</th>
+                    <th>Mechanical Royalty</th>
+                    <th>Performance Royalty</th>
+                    <th>Total Royalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be loaded here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="script.js"></script>
     <script>
-        let royaltyReports = JSON.parse(localStorage.getItem('royaltyReports')) || [];
-
-        function populatePeriodOptions() {
-            const periodSelect = document.getElementById('periodSelect');
-            let startYear = 2019;
-            let endYear = 2040;
-            let periods = ["Jan-Jun", "Jul-Dec"];
-            
-            for (let year = startYear; year <= endYear; year++) {
-                periods.forEach(period => {
-                    const option = document.createElement('option');
-                    option.value = `${period} ${year}`;
-                    option.textContent = `${period} ${year}`;
-                    periodSelect.appendChild(option);
-                });
-            }
-        }
-
         function loadRoyaltyData() {
-            const selectedPeriod = document.getElementById('periodSelect').value;
-            const report = royaltyReports.find(report => report.period === selectedPeriod);
+            const period = document.getElementById('period-select').value;
+            if (!period) return;
 
-            if (report) {
-                updateRoyaltyTable(report.royalties);
-            } else {
-                alert('No data available for the selected period.');
+            // Load the data for the selected period
+            const data = JSON.parse(localStorage.getItem(`royalty_report_${period}`));
+            if (!data) {
+                alert('No data found for the selected period.');
+                return;
             }
-        }
 
-        function updateRoyaltyTable(royaltyData) {
-            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            royaltyData.forEach(data => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.songTitle;
-                row.insertCell(1).textContent = data.name;
-                row.insertCell(2).textContent = data.status;
-                row.insertCell(3).textContent = data.digital.toFixed(2);
-                row.insertCell(4).textContent = data.synch.toFixed(2);
-                row.insertCell(5).textContent = data.mechanical.toFixed(2);
-                row.insertCell(6).textContent = data.performance.toFixed(2);
-                row.insertCell(7).textContent = data.total.toFixed(2);
+            // Load Royalty Breakdown
+            const breakdownTable = document.getElementById('breakdown-table').getElementsByTagName('tbody')[0];
+            breakdownTable.innerHTML = '';
+            data.breakdown.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.songTitle}</td>
+                    <td>${row.composer}</td>
+                    <td>${row.share}</td>
+                    <td>${row.digitalRoyalty}</td>
+                    <td>${row.synchRoyalty}</td>
+                    <td>${row.mechanicalRoyalty}</td>
+                    <td>${row.performanceRoyalty}</td>
+                    <td>${row.totalRoyalty}</td>
+                `;
+                breakdownTable.appendChild(tr);
+            });
+
+            // Load Total Royalties by Songwriter
+            const totalRoyaltiesTable = document.getElementById('total-royalties-table').getElementsByTagName('tbody')[0];
+            totalRoyaltiesTable.innerHTML = '';
+            data.totalRoyalties.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.songwriter}</td>
+                    <td>${row.digitalRoyalty}</td>
+                    <td>${row.synchRoyalty}</td>
+                    <td>${row.mechanicalRoyalty}</td>
+                    <td>${row.performanceRoyalty}</td>
+                    <td>${row.totalRoyalty}</td>
+                `;
+                totalRoyaltiesTable.appendChild(tr);
             });
         }
-
-        document.getElementById('periodSelect').addEventListener('change', loadRoyaltyData);
-
-        populatePeriodOptions();
     </script>
 </body>
 </html>
