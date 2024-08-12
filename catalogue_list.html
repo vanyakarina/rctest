@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogue List</title>
+    <title>Works</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
         }
         .container {
             max-width: 900px;
@@ -20,85 +32,82 @@
             border-radius: 8px;
         }
         h1 {
-            text-align: center;
             color: #333;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         table, th, td {
-            border: 1px solid #ddd;
+            border: 1px solid black;
         }
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: left;
         }
         th {
             background-color: #f2f2f2;
         }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .form-group input[type="text"] {
-            width: calc(100% - 22px); /* Adjust width for padding and border */
-        }
-        .form-group button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .form-group button:hover {
-            background-color: #218838;
-        }
     </style>
 </head>
 <body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
+        <a href="royalty_report.html">Royalty Report</a>
+    </nav>
+
     <div class="container">
         <h1>Catalogue List</h1>
-        <table>
+        <table id="catalogueTable">
             <thead>
                 <tr>
-                    <th>Song Title</th>
-                    <th>Record Label</th>
+                    <th>Title</th>
                     <th>Release Date</th>
                     <th>Distributor</th>
                     <th>ISRC</th>
                     <th>Songwriters</th>
-                    <th>Actions</th>
+                    <th>Action</th>
                 </tr>
             </thead>
-            <tbody id="catalogueTableBody">
-                <!-- Rows will be dynamically filled with data -->
+            <tbody>
+                <!-- Catalogue data will be added here -->
             </tbody>
         </table>
     </div>
+
     <script>
-        // Example script to handle dynamic data
-        function loadCatalogueData() {
-            // Load and populate catalogue data here
+        let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+
+        function updateCatalogueTable() {
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            catalogue.forEach((entry, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = entry.title;
+                row.insertCell(1).textContent = entry.releaseDate;
+                row.insertCell(2).textContent = entry.distributor;
+                row.insertCell(3).textContent = entry.isrc || 'N/A';
+                row.insertCell(4).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
+                row.insertCell(5).innerHTML = '<button onclick="editCatalogue(' + index + ')">Edit</button> <button onclick="deleteCatalogue(' + index + ')">Delete</button>';
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', loadCatalogueData);
+        function editCatalogue(index) {
+            // Handle edit functionality here
+        }
+
+        function deleteCatalogue(index) {
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
+        }
+
+        // Initialize the page
+        updateCatalogueTable();
     </script>
 </body>
 </html>
