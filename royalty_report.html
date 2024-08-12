@@ -49,7 +49,7 @@
 
     <div class="content">
         <h1>Royalty Calculator</h1>
-        <form id="royaltyForm" action="royalty_report_data.html" method="post">
+        <form id="royaltyForm" action="royalty_report_data.html" method="post" target="_blank">
             <h2>Input Royalties</h2>
             <table id="inputTable">
                 <thead>
@@ -127,10 +127,9 @@
         <br>
         <button onclick="exportData()">Export Data</button>
         <input type="file" id="importFile" />
-        <button type="button" onclick="importData()">Import Data</button>
+        <button onclick="importData()">Import Data</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.6/xlsx.full.min.js"></script>
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
@@ -146,24 +145,6 @@
                 row.insertCell(3).innerHTML = `<input type="number" data-song="${song.title}" class="mechanicalRoyalty" placeholder="Mechanical Royalty">`;
                 row.insertCell(4).innerHTML = `<input type="number" data-song="${song.title}" class="performanceRoyalty" placeholder="Performance Royalty">`;
             });
-        }
-
-        function populatePeriodDropdown() {
-            const periodDropdown = document.getElementById('period');
-            const startYear = 2019;
-            const endYear = 2040;
-            const periods = [
-                'Jan-Jun', 'Jul-Dec'
-            ];
-
-            for (let year = startYear; year <= endYear; year++) {
-                periods.forEach(period => {
-                    const option = document.createElement('option');
-                    option.value = `${period} ${year}`;
-                    option.textContent = `${period} ${year}`;
-                    periodDropdown.appendChild(option);
-                });
-            }
         }
 
         function calculateAllRoyalties() {
@@ -232,7 +213,14 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const songwriterTotals = royaltyData.reduce((totals, data) => {
+            const filterSongwriter = document.getElementById('filterSongwriter').value;
+            let filteredData = royaltyData;
+
+            if (filterSongwriter) {
+                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
+            }
+
+            const songwriterTotals = filteredData.reduce((totals, data) => {
                 if (!totals[data.name]) {
                     totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
                 }
@@ -241,29 +229,52 @@
                 totals[data.name].mechanical += data.mechanical;
                 totals[data.name].performance += data.performance;
                 totals[data.name].total += data.total;
+
                 return totals;
             }, {});
 
-            const filteredTableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
-            filteredTableBody.innerHTML = '';
-            for (const [name, totals] of Object.entries(songwriterTotals)) {
-                const row = filteredTableBody.insertRow();
+            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            Object.keys(songwriterTotals).forEach(name => {
+                const total = songwriterTotals[name];
+                const row = tableBody.insertRow();
                 row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = totals.digital.toFixed(2);
-                row.insertCell(2).textContent = totals.synch.toFixed(2);
-                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
-                row.insertCell(4).textContent = totals.performance.toFixed(2);
-                row.insertCell(5).textContent = totals.total.toFixed(2);
+                row.insertCell(1).textContent = total.digital.toFixed(2);
+                row.insertCell(2).textContent = total.synch.toFixed(2);
+                row.insertCell(3).textContent = total.mechanical.toFixed(2);
+                row.insertCell(4).textContent = total.performance.toFixed(2);
+                row.insertCell(5).textContent = total.total.toFixed(2);
+            });
+        }
+
+        function filterBySongwriter() {
+            calculateAllRoyalties();
+        }
+
+        function populatePeriodOptions() {
+            const periods = [];
+            for (let year = 2019; year <= 2040; year++) {
+                periods.push(`Jan-Jun ${year}`);
+                periods.push(`Jul-Dec ${year}`);
             }
+            const periodSelect = document.getElementById('period');
+            periods.forEach(period => {
+                const option = document.createElement('option');
+                option.value = period;
+                option.textContent = period;
+                periodSelect.appendChild(option);
+            });
         }
 
         function exportData() {
-            const workbook = XLSX.utils.book_new();
-            const royaltySheet = XLSX.utils.table_to_sheet(document.getElementById('royaltyTable'));
-            const filteredSheet = XLSX.utils.table_to_sheet(document.getElementById('filteredRoyaltyTable'));
-            XLSX.utils.book_append_sheet(workbook, royaltySheet, 'Royalty Breakdown');
-            XLSX.utils.book_append_sheet(workbook, filteredSheet, 'Filtered Royalties');
-            XLSX.writeFile(workbook, 'royalty_data.xlsx');
+            const data = JSON.stringify(royalties);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'royalties.json';
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function importData() {
@@ -271,42 +282,26 @@
             const file = fileInput.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const royaltySheet = workbook.Sheets['Royalty Breakdown'];
-                    const filteredSheet = workbook.Sheets['Filtered Royalties'];
-                    if (royaltySheet) {
-                        const royaltyData = XLSX.utils.sheet_to_json(royaltySheet, { header: 1 });
-                        updateTableFromImport(royaltyData, 'royaltyTable');
-                    }
-                    if (filteredSheet) {
-                        const filteredData = XLSX.utils.sheet_to_json(filteredSheet, { header: 1 });
-                        updateTableFromImport(filteredData, 'filteredRoyaltyTable');
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        royalties = data;
+                        updateRoyaltyTable(royalties);
+                        updateFilteredRoyaltyTable(royalties);
+                    } catch (e) {
+                        alert('Failed to load data.');
                     }
                 };
-                reader.readAsArrayBuffer(file);
+                reader.readAsText(file);
+            } else {
+                alert('No file selected.');
             }
         }
 
-        function updateTableFromImport(data, tableId) {
-            const tableBody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            data.forEach(rowData => {
-                const row = tableBody.insertRow();
-                rowData.forEach(cellData => {
-                    row.insertCell().textContent = cellData;
-                });
-            });
-        }
-
-        function filterBySongwriter() {
-            calculateAllRoyalties(); // Recalculate to ensure the filtered data is up to date
-        }
-
-        // Initialize
-        populateSongTitles();
-        populatePeriodDropdown();
+        window.onload = function() {
+            populateSongTitles();
+            populatePeriodOptions();
+        };
     </script>
 </body>
 </html>
