@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue Input</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group input[type="text"] {
+            width: calc(100% - 22px); /* Adjust width for padding and border */
+        }
+        .form-group button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catalogue Input</h1>
+        <form id="catalogueForm">
+            <div class="form-group">
+                <label for="songTitle">Song Title</label>
+                <input type="text" id="songTitle" name="songTitle" required>
+            </div>
+            <div class="form-group">
+                <label for="recordLabel">Record Label</label>
+                <input type="text" id="recordLabel" name="recordLabel" required>
+            </div>
+            <div class="form-group">
+                <label for="releaseDate">Release Date</label>
+                <input type="date" id="releaseDate" name="releaseDate" required>
+            </div>
+            <div class="form-group">
+                <label for="distributor">Distributor</label>
+                <input type="text" id="distributor" name="distributor" required>
+            </div>
+            <div class="form-group">
+                <label for="isrc">ISRC</label>
+                <input type="text" id="isrc" name="isrc">
+            </div>
+            <div class="form-group">
+                <label for="songwriters">Songwriters</label>
+                <select id="songwriters" name="songwriters[]" multiple required>
+                    <!-- Options will be dynamically filled from the songwriter list -->
+                </select>
+                <div class="form-group">
+                    <label for="newSongwriter">Add New Songwriter</label>
+                    <input type="text" id="newSongwriter" name="newSongwriter" placeholder="Enter new songwriter name">
+                </div>
+                <div class="form-group">
+                    <label for="share">Share (%)</label>
+                    <input type="number" id="share" name="share" min="0" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role (A/C/CA)</label>
+                    <select id="role" name="role" required>
+                        <option value="A">Author</option>
+                        <option value="C">Composer</option>
+                        <option value="CA">Composer and Author</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    <script>
+        // Example script to handle dynamic addition of songwriters
+        document.getElementById('catalogueForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // Handle form submission logic here
+        });
+    </script>
+</body>
+</html>
