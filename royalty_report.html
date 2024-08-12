@@ -235,123 +235,131 @@
 
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-
-            Object.keys(songwriterTotals).forEach(name => {
+            for (const [name, totals] of Object.entries(songwriterTotals)) {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = songwriterTotals[name].digital.toFixed(2);
-                row.insertCell(2).textContent = songwriterTotals[name].synch.toFixed(2);
-                row.insertCell(3).textContent = songwriterTotals[name].mechanical.toFixed(2);
-                row.insertCell(4).textContent = songwriterTotals[name].performance.toFixed(2);
-                row.insertCell(5).textContent = songwriterTotals[name].total.toFixed(2);
-            });
+                row.insertCell(1).textContent = totals.digital.toFixed(2);
+                row.insertCell(2).textContent = totals.synch.toFixed(2);
+                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
+                row.insertCell(4).textContent = totals.performance.toFixed(2);
+                row.insertCell(5).textContent = totals.total.toFixed(2);
+            }
         }
 
-        function filterBySongwriter() {
-            const filterSongwriter = document.getElementById('songwriterFilter').value;
-            const currentRoyaltyData = Array.from(document.getElementById('royaltyTable').getElementsByTagName('tbody')[0].rows)
-                .map(row => {
-                    return {
-                        songTitle: row.cells[0].textContent,
-                        name: row.cells[1].textContent,
-                        status: row.cells[2].textContent,
-                        digital: parseFloat(row.cells[3].textContent),
-                        synch: parseFloat(row.cells[4].textContent),
-                        mechanical: parseFloat(row.cells[5].textContent),
-                        performance: parseFloat(row.cells[6].textContent),
-                        total: parseFloat(row.cells[7].textContent)
-                    };
-                });
-
-            updateFilteredRoyaltyTable(currentRoyaltyData);
+        function populateSongwriters() {
+            const filterSelect = document.getElementById('songwriterFilter');
+            filterSelect.innerHTML = '<option value="All">All</option>';
+            songwriters.forEach(sw => {
+                const option = document.createElement('option');
+                option.value = sw.name;
+                option.textContent = sw.name;
+                filterSelect.appendChild(option);
+            });
         }
 
         function saveRoyaltyReport(event) {
             event.preventDefault();
+
             const period = document.getElementById('period').value;
-            const royaltyData = Array.from(document.getElementById('royaltyTable').getElementsByTagName('tbody')[0].rows)
-                .map(row => {
-                    return {
-                        songTitle: row.cells[0].textContent,
-                        name: row.cells[1].textContent,
-                        status: row.cells[2].textContent,
-                        digital: parseFloat(row.cells[3].textContent),
-                        synch: parseFloat(row.cells[4].textContent),
-                        mechanical: parseFloat(row.cells[5].textContent),
-                        performance: parseFloat(row.cells[6].textContent),
-                        total: parseFloat(row.cells[7].textContent)
-                    };
+            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+            const data = [];
+
+            Array.from(tableBody.rows).forEach(row => {
+                data.push({
+                    songTitle: row.cells[0].textContent,
+                    songwriter: row.cells[1].textContent,
+                    status: row.cells[2].textContent,
+                    digital: parseFloat(row.cells[3].textContent),
+                    synch: parseFloat(row.cells[4].textContent),
+                    mechanical: parseFloat(row.cells[5].textContent),
+                    performance: parseFloat(row.cells[6].textContent),
+                    total: parseFloat(row.cells[7].textContent)
                 });
-
-            let royaltyReportData = JSON.parse(localStorage.getItem('royaltyReportData')) || [];
-            royaltyReportData.push({ period, royaltyData });
-            localStorage.setItem('royaltyReportData', JSON.stringify(royaltyReportData));
-            alert('Royalty report saved successfully.');
-        }
-
-        function populateSongwriterFilter() {
-            const songwriterFilter = document.getElementById('songwriterFilter');
-            const uniqueSongwriters = [...new Set(songwriters.map(sw => sw.name))];
-            uniqueSongwriters.forEach(sw => {
-                const option = document.createElement('option');
-                option.value = sw;
-                option.textContent = sw;
-                songwriterFilter.appendChild(option);
             });
+
+            const savedReports = JSON.parse(localStorage.getItem('royaltyReports')) || {};
+            savedReports[period] = data;
+            localStorage.setItem('royaltyReports', JSON.stringify(savedReports));
+
+            alert('Royalty report saved successfully!');
         }
 
         function populatePeriodOptions() {
             const periodSelect = document.getElementById('period');
-            const periods = [];
-            for (let year = 2019; year <= 2040; year++) {
-                periods.push(`Jan-Jun ${year}`);
-                periods.push(`Jul-Dec ${year}`);
+            const startYear = 2019;
+            const endYear = 2040;
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const halfYearLabels = ["Jan-Jun", "Jul-Dec"];
+
+            for (let year = startYear; year <= endYear; year++) {
+                halfYearLabels.forEach((label, index) => {
+                    const period = `${label} ${year}`;
+                    const option = document.createElement('option');
+                    option.value = period;
+                    option.textContent = period;
+                    periodSelect.appendChild(option);
+                });
             }
-            periods.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period;
-                option.textContent = period;
-                periodSelect.appendChild(option);
-            });
         }
 
         function exportData() {
-            const royaltyData = JSON.parse(localStorage.getItem('royaltyReportData')) || [];
-            const ws = XLSX.utils.json_to_sheet(royaltyData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "RoyaltyReport");
-            XLSX.writeFile(wb, "RoyaltyReport.xlsx");
+            const workbook = XLSX.utils.book_new();
+            const sheetData = [];
+
+            const header = ["Song Title", "Songwriter", "Status", "Digital Royalty", "Synch Royalty", "Mechanical Royalty", "Performance Royalty", "Total Royalty"];
+            sheetData.push(header);
+
+            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+            Array.from(tableBody.rows).forEach(row => {
+                const rowData = Array.from(row.cells).map(cell => cell.textContent);
+                sheetData.push(rowData);
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Royalty Report");
+            XLSX.writeFile(workbook, "royalty_report.xlsx");
         }
 
         function importData() {
             const fileInput = document.getElementById('importFile');
             const file = fileInput.files[0];
-            const reader = new FileReader();
 
+            if (!file) {
+                alert('Please select a file to import.');
+                return;
+            }
+
+            const reader = new FileReader();
             reader.onload = function (event) {
                 const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const importedData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(worksheet);
 
-                let royaltyReportData = importedData.map(row => ({
-                    period: row[0],
-                    royaltyData: row[1] // Adjust according to the structure of your imported data
-                }));
+                const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = '';
 
-                localStorage.setItem('royaltyReportData', JSON.stringify(royaltyReportData));
-                alert('Data imported successfully.');
+                json.forEach(row => {
+                    const tr = document.createElement('tr');
+                    Object.values(row).forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = value;
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+
+                alert('Data imported successfully!');
             };
-
             reader.readAsArrayBuffer(file);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             populateSongTitles();
             populatePeriodOptions();
-            populateSongwriterFilter();
+            populateSongwriters();
         });
+
     </script>
 </body>
 </html>
