@@ -49,20 +49,12 @@
     <div class="content">
         <h1>Royalty Report</h1>
         <form id="royaltyForm">
-            <h2>Select Period</h2>
-            <label for="periodSelect">Period:</label>
-            <select id="periodSelect" required>
-                <option value="">Select a period</option>
-                <option value="2019-01-06">Jan-Jun 19</option>
-                <option value="2019-07-12">Jul-Dec 19</option>
-                <option value="2020-01-06">Jan-Jun 20</option>
-                <option value="2020-07-12">Jul-Dec 20</option>
-                <!-- Add more periods up to 2040 -->
-                <option value="2040-01-06">Jan-Jun 40</option>
-                <option value="2040-07-12">Jul-Dec 40</option>
+            <h2>Input Royalties</h2>
+            <label for="period">Select Period:</label>
+            <select id="period">
+                <!-- Options will be filled by JavaScript -->
             </select>
             <br><br>
-            <h2>Input Royalties</h2>
             <table id="inputTable">
                 <thead>
                     <tr>
@@ -78,7 +70,7 @@
                 </tbody>
             </table>
             <br>
-            <button type="button" onclick="calculateAllRoyalties()">Calculate All Royalties</button>
+            <button type="button" onclick="calculateAllRoyalties()">Save</button>
             <br><br>
         </form>
 
@@ -138,6 +130,21 @@
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
         let royalties = [];
 
+        function populatePeriods() {
+            const periodSelect = document.getElementById('period');
+            const startYear = 2019;
+            const endYear = 2040;
+            const periods = ['Jan-Jun', 'Jul-Dec'];
+            for (let year = startYear; year <= endYear; year++) {
+                periods.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = `${period} ${year}`;
+                    option.textContent = `${period} ${year}`;
+                    periodSelect.appendChild(option);
+                });
+            }
+        }
+
         function populateSongTitles() {
             const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
             catalogue.forEach(song => {
@@ -162,39 +169,35 @@
                 const performanceRoyalty = parseFloat(row.querySelector('.performanceRoyalty').value) || 0;
 
                 const song = catalogue.find(s => s.title === songTitle);
-                if (song) {
-                    let songData = song.songwriters.map(sw => {
-                        const songwriter = songwriters.find(s => s.name === sw.name);
-                        const isSigned = songwriter && songwriter.signed;
-                        let royalties = {
-                            name: sw.name,
-                            songTitle: songTitle,
-                            status: isSigned ? 'Signed' : 'Unsigned',
-                            digital: 0,
-                            synch: 0,
-                            mechanical: 0,
-                            performance: 0,
-                            total: 0
-                        };
+                let songData = song.songwriters.map(sw => {
+                    const songwriter = songwriters.find(s => s.name === sw.name);
+                    const isSigned = songwriter && songwriter.signed;
+                    let royalties = {
+                        name: sw.name,
+                        songTitle: songTitle,
+                        status: isSigned ? 'Signed' : 'Unsigned',
+                        digital: 0,
+                        synch: 0,
+                        mechanical: 0,
+                        performance: 0,
+                        total: 0
+                    };
 
-                        if (isSigned) {
-                            const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
-                            royalties.digital = (sw.share / totalShare) * digitalRoyalty;
-                            royalties.synch = (sw.share / totalShare) * synchRoyalty;
-                            royalties.mechanical = (sw.share / totalShare) * mechanicalRoyalty;
-                            royalties.performance = (sw.share / totalShare) * performanceRoyalty;
-                            royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
-                        }
+                    if (isSigned) {
+                        const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
+                        royalties.digital = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * digitalRoyalty;
+                        royalties.synch = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * synchRoyalty;
+                        royalties.mechanical = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * mechanicalRoyalty;
+                        royalties.performance = (sw.share / (song.songwriters.filter(s => s.signed).reduce((sum, s) => sum + (s.share || 0), 0))) * performanceRoyalty;
+                        royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
+                    }
 
-                        return royalties;
-                    });
+                    return royalties;
+                });
 
-                    songData.forEach(data => {
-                        if (data.status === 'Signed') {
-                            totalRoyalties.push(data);
-                        }
-                    });
-                }
+                songData.forEach(data => {
+                    totalRoyalties.push(data);
+                });
             });
 
             updateRoyaltyTable(totalRoyalties);
@@ -218,31 +221,31 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('filterSongwriter').value;
-            let filteredData = royaltyData;
-
-            if (filterSongwriter) {
-                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
-            }
-
-            const songwriterTotals = filteredData.reduce((totals, data) => {
-                if (!totals[data.name]) {
-                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
-                }
-                totals[data.name].digital += data.digital;
-                totals[data.name].synch += data.synch;
-                totals[data.name].mechanical += data.mechanical;
-                totals[data.name].performance += data.performance;
-                totals[data.name].total += data.total;
-                return totals;
-            }, {});
-
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-            Object.keys(songwriterTotals).forEach(name => {
-                const data = songwriterTotals[name];
+            const filteredData = {};
+            
+            royaltyData.forEach(data => {
+                if (data.status === 'Signed') {
+                    if (!filteredData[data.name]) {
+                        filteredData[data.name] = { ...data };
+                        filteredData[data.name].digital = 0;
+                        filteredData[data.name].synch = 0;
+                        filteredData[data.name].mechanical = 0;
+                        filteredData[data.name].performance = 0;
+                        filteredData[data.name].total = 0;
+                    }
+                    filteredData[data.name].digital += data.digital;
+                    filteredData[data.name].synch += data.synch;
+                    filteredData[data.name].mechanical += data.mechanical;
+                    filteredData[data.name].performance += data.performance;
+                    filteredData[data.name].total += data.total;
+                }
+            });
+            
+            Object.values(filteredData).forEach(data => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = name;
+                row.insertCell(0).textContent = data.name;
                 row.insertCell(1).textContent = data.digital.toFixed(2);
                 row.insertCell(2).textContent = data.synch.toFixed(2);
                 row.insertCell(3).textContent = data.mechanical.toFixed(2);
@@ -251,53 +254,40 @@
             });
         }
 
+        function populateSongwriterOptions() {
+            const filterSelect = document.getElementById('filterSongwriter');
+            songwriters.forEach(sw => {
+                const option = document.createElement('option');
+                option.value = sw.name;
+                option.textContent = sw.name;
+                filterSelect.appendChild(option);
+            });
+        }
+
         function filterBySongwriter() {
-            updateFilteredRoyaltyTable(royalties);
+            const selectedSongwriter = document.getElementById('filterSongwriter').value;
+            const filteredData = royalties.filter(data => data.name === selectedSongwriter);
+            updateFilteredRoyaltyTable(filteredData);
         }
 
         function exportData() {
-            const data = JSON.stringify(royalties);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'royalties.json';
-            a.click();
-            URL.revokeObjectURL(url);
+            // Implement export functionality
+            console.log("Export functionality is not yet implemented.");
         }
 
         function importData() {
-            const fileInput = document.getElementById('importFile');
-            if (fileInput.files.length === 0) return;
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = JSON.parse(e.target.result);
-                catalogue = data.catalogue || catalogue;
-                songwriters = data.songwriters || songwriters;
-                royalties = data.royalties || royalties;
-                localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                localStorage.setItem('royalties', JSON.stringify(royalties));
-                populateSongTitles();
-            };
-            reader.readAsText(file);
+            // Implement import functionality
+            console.log("Import functionality is not yet implemented.");
         }
 
-        window.onload = function() {
+        function init() {
+            populatePeriods();
             populateSongTitles();
-            // Populate filter dropdown
-            const filterSelect = document.getElementById('filterSongwriter');
-            songwriters.forEach(sw => {
-                if (sw.signed) {
-                    const option = document.createElement('option');
-                    option.value = sw.name;
-                    option.textContent = sw.name;
-                    filterSelect.appendChild(option);
-                }
-            });
-        };
+            populateSongwriterOptions();
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
+
