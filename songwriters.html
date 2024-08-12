@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Songwriters Input</title>
+    <title>Songwriters</title>
     <style>
         nav {
             background-color: #333;
@@ -20,49 +20,85 @@
         nav a:hover {
             background-color: #575757;
         }
-        .content {
-            margin: 20px;
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
         }
         form {
             margin-bottom: 20px;
         }
-        label, input, button {
-            margin-right: 10px;
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+        input {
+            width: calc(100% - 22px);
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
     <nav>
         <a href="index.html">Home</a>
-        <a href="songwriters.html">Songwriters</a>
         <a href="catalogue_input.html">Catalogue Registration</a>
         <a href="catalogue_list.html">Works</a>
-        <a href="royalty.html">Royalty Calculator</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
         <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
-    <div class="content">
-        <h1>Songwriters Input</h1>
+    <div class="container">
+        <h1>Songwriters</h1>
         <form id="songwriterForm">
-            <label for="name">Songwriter Name:</label>
-            <input type="text" id="name" name="name" required>
-            <br><br>
-            <label for="roles">Roles (A for Author, C for Composer, CA for Composer and Author):</label>
-            <input type="text" id="roles" name="roles" required>
-            <br><br>
-            <label for="share">Share (%):</label>
-            <input type="number" id="share" name="share" step="0.01" required>
-            <br><br>
-            <label for="signed">Signed (Y/N):</label>
-            <input type="text" id="signed" name="signed" required>
-            <br><br>
-            <label for="ipNames">IP Names:</label>
-            <input type="text" id="ipNames" name="ipNames" placeholder="Enter multiple IP Names separated by commas" required>
-            <br><br>
+            <label for="name">Name:</label>
+            <input type="text" id="name" placeholder="Songwriter Name" required>
+            <label for="bankName">Bank Name:</label>
+            <input type="text" id="bankName" placeholder="Bank Name" required>
+            <label for="bankAccount">Bank Account:</label>
+            <input type="text" id="bankAccount" placeholder="Bank Account" required>
+            <label for="ktpNumber">KTP Number:</label>
+            <input type="text" id="ktpNumber" placeholder="KTP Number" required>
+            <label for="ipNames">IP Names (comma separated):</label>
+            <input type="text" id="ipNames" placeholder="IP Names (comma separated)" required>
             <label for="ipBase">IP Base:</label>
-            <input type="text" id="ipBase" name="ipBase" placeholder="Enter IP Base" required>
-            <br><br>
-            <button type="button" onclick="addSongwriter()">Add Songwriter</button>
+            <input type="text" id="ipBase" placeholder="IP Base" required>
+            <button type="button" onclick="submitSongwriter()">Submit Songwriter</button>
         </form>
 
         <h2>Songwriter List</h2>
@@ -70,54 +106,63 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Roles</th>
-                    <th>Share</th>
-                    <th>Signed</th>
+                    <th>Bank Name</th>
+                    <th>Bank Account</th>
+                    <th>KTP Number</th>
                     <th>IP Names</th>
                     <th>IP Base</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Songwriter rows will be added here -->
+                <!-- Songwriter data will be added here -->
             </tbody>
         </table>
     </div>
 
     <script>
-        const songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
-        function addSongwriter() {
+        function submitSongwriter() {
             const name = document.getElementById('name').value;
-            const roles = document.getElementById('roles').value;
-            const share = parseFloat(document.getElementById('share').value);
-            const signed = document.getElementById('signed').value.toUpperCase();
+            const bankName = document.getElementById('bankName').value;
+            const bankAccount = document.getElementById('bankAccount').value;
+            const ktpNumber = document.getElementById('ktpNumber').value;
             const ipNames = document.getElementById('ipNames').value.split(',').map(name => name.trim());
             const ipBase = document.getElementById('ipBase').value;
 
-            if (!name || !roles || isNaN(share) || (signed !== 'Y' && signed !== 'N') || !ipBase) {
-                alert('Please fill out all fields correctly.');
-                return;
-            }
-
-            const songwriter = { name, roles, share, signed, ipNames, ipBase };
+            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBase, signed: true };
             songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
+            document.getElementById('songwriterForm').reset();
         }
 
         function updateSongwriterTable() {
             const tableBody = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-
-            songwriters.forEach(sw => {
+            songwriters.forEach((sw, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = sw.name;
-                row.insertCell(1).textContent = sw.roles;
-                row.insertCell(2).textContent = sw.share.toFixed(2);
-                row.insertCell(3).textContent = sw.signed;
+                row.insertCell(1).textContent = sw.bankName;
+                row.insertCell(2).textContent = sw.bankAccount;
+                row.insertCell(3).textContent = sw.ktpNumber;
                 row.insertCell(4).textContent = sw.ipNames.join(', ');
                 row.insertCell(5).textContent = sw.ipBase;
+                row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
+                row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
+        }
+
+        function editSongwriter(index) {
+            // Handle edit functionality here
+        }
+
+        function deleteSongwriter(index) {
+            songwriters.splice(index, 1);
+            localStorage.setItem('songwriters', JSON.stringify(songwriters));
+            updateSongwriterTable();
         }
 
         // Initialize the page
