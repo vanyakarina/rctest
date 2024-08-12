@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royalty Report</title>
+    <style>
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="songwriters.html">Songwriters Input</a>
+        <a href="catalogue.html">Catalogue Input</a>
+        <a href="royalty.html">Royalty Calculation</a>
+        <a href="royalty_report.html">Royalty Report</a>
+    </nav>
+
+    <div class="content">
+        <h1>Royalty Report</h1>
+        <form id="reportForm">
+            <label for="period">Royalty Period:</label>
+            <input type="text" id="period" placeholder="e.g., Jan-Jun 24" required>
+            <button type="button" onclick="generateReport()">Generate Report</button>
+        </form>
+
+        <h2>Report Results</h2>
+        <h3>Royalties for Each Songwriter</h3>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Songwriter</th>
+                    <th>Total Royalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Report data will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+        let reports = JSON.parse(localStorage.getItem('reports')) || {};
+
+        function generateReport() {
+            const period = document.getElementById('period').value;
+            if (!period) {
+                alert('Please enter a royalty period.');
+                return;
+            }
+
+            if (reports[period]) {
+                alert('Report for this period already exists.');
+                return;
+            }
+
+            const totalRoyalties = {};
+
+            catalogue.forEach(song => {
+                const totalSongRoyalty = song.digitalRoyalty + song.synchRoyalty + song.mechanicalRoyalty + song.performanceRoyalty;
+
+                song.songwriters.forEach(sw => {
+                    if (!totalRoyalties[sw.name]) {
+                        totalRoyalties[sw.name] = 0;
+                    }
+                    totalRoyalties[sw.name] += (sw.share / 100) * totalSongRoyalty;
+                });
+            });
+
+            reports[period] = totalRoyalties;
+            localStorage.setItem('reports', JSON.stringify(reports));
+            updateReportTable(totalRoyalties);
+        }
+
+        function updateReportTable(royalties) {
+            const tableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            Object.keys(royalties).forEach(name => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = name;
+                row.insertCell(1).textContent = royalties[name].toFixed(2);
+            });
+        }
+    </script>
+</body>
+</html>
