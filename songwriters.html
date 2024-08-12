@@ -87,6 +87,7 @@
     <div class="container">
         <h1>Songwriters</h1>
         <form id="songwriterForm">
+            <input type="hidden" id="editIndex">
             <label for="name">Name:</label>
             <input type="text" id="name" placeholder="Songwriter Name" required>
             <label for="ipNames">IP Names (comma separated):</label>
@@ -123,12 +124,21 @@
             const name = document.getElementById('name').value;
             const ipNames = document.getElementById('ipNames').value.split(',').map(name => name.trim());
             const ipBase = document.getElementById('ipBase').value;
+            const index = document.getElementById('editIndex').value;
 
-            const songwriter = { name, ipNames, ipBase, signed: true };
-            songwriters.push(songwriter);
+            if (index === '') {
+                // Add new songwriter
+                const songwriter = { name, ipNames, ipBase, signed: true };
+                songwriters.push(songwriter);
+            } else {
+                // Update existing songwriter
+                songwriters[index] = { name, ipNames, ipBase, signed: true };
+            }
+            
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
             document.getElementById('songwriterForm').reset();
+            document.getElementById('editIndex').value = '';
         }
 
         function updateSongwriterTable() {
@@ -140,12 +150,19 @@
                 row.insertCell(1).textContent = sw.ipNames.join(', ');
                 row.insertCell(2).textContent = sw.ipBase;
                 row.insertCell(3).textContent = sw.signed ? 'Signed' : 'Unsigned';
-                row.insertCell(4).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
+                row.insertCell(4).innerHTML = `
+                    <button onclick="editSongwriter(${index})">Edit</button> 
+                    <button onclick="deleteSongwriter(${index})">Delete</button>
+                `;
             });
         }
 
         function editSongwriter(index) {
-            // Handle edit functionality here
+            const songwriter = songwriters[index];
+            document.getElementById('name').value = songwriter.name;
+            document.getElementById('ipNames').value = songwriter.ipNames.join(', ');
+            document.getElementById('ipBase').value = songwriter.ipBase;
+            document.getElementById('editIndex').value = index;
         }
 
         function deleteSongwriter(index) {
