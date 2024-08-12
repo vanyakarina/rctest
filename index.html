@@ -5,11 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
         }
         .container {
             max-width: 900px;
@@ -20,38 +32,14 @@
             border-radius: 8px;
         }
         h1 {
-            text-align: center;
             color: #333;
-        }
-        .nav {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        .nav a {
-            text-decoration: none;
-            color: #007bff;
-            padding: 10px 20px;
-            border-radius: 4px;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-        }
-        .nav a:hover {
-            background: #e2e6ea;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>WRAP!</h1>
-        <div class="nav">
-            <a href="catalogue_input.html">Catalogue Registration</a>
-            <a href="catalogue_list.html">Works</a>
-            <a href="songwriters.html">Songwriters</a>
-            <a href="royalty_calculator.html">Royalty Calculator</a>
-            <a href="royalty_report.html">Royalty Report</a>
-        </div>
-        <p>Welcome to the WRAP! Publishing Administrative Portal. Use the links above to manage catalogues, songwriters, and calculate royalties.</p>
-    </div>
-</body>
-</html>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator
