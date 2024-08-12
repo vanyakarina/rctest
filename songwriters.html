@@ -38,7 +38,7 @@
             display: block;
             margin: 5px 0;
         }
-        input, select {
+        input {
             width: calc(100% - 22px);
             padding: 8px;
             margin: 5px 0 15px 0;
@@ -98,22 +98,21 @@
         <form id="songwriterForm">
             <label for="name">Name:</label>
             <input type="text" id="name" placeholder="Songwriter Name" required>
+            <label for="idNumber">ID Number:</label>
+            <input type="text" id="idNumber" placeholder="ID Number" required>
             <label for="bankName">Bank Name:</label>
-            <input type="text" id="bankName" placeholder="Bank Name" required>
-            <label for="bankAccount">Bank Account:</label>
-            <input type="text" id="bankAccount" placeholder="Bank Account" required>
-            <label for="ktpNumber">KTP Number:</label>
-            <input type="text" id="ktpNumber" placeholder="KTP Number" required>
-            
+            <input type="text" id="bankName" placeholder="Bank Name">
+            <label for="bankAccount">Bank Account Number:</label>
+            <input type="text" id="bankAccount" placeholder="Bank Account Number">
+            <label for="ipNames">IP Names:</label>
             <div id="ipNamesContainer">
-                <label for="ipName">IP Name:</label>
-                <input type="text" id="ipName" placeholder="IP Name">
-                <label for="ipNumber">IP Number:</label>
-                <input type="text" id="ipNumber" placeholder="IP Number">
-                <button type="button" onclick="addIPName()">Add IP Name</button>
+                <div class="ip-row">
+                    <input type="text" class="ipName" placeholder="IP Name">
+                    <input type="text" class="ipNumber" placeholder="IP Number">
+                </div>
             </div>
-
-            <label for="ipBase">IP Base (if applicable):</label>
+            <button type="button" onclick="addIPName()">Add More IP Names</button>
+            <label for="ipBase">IP Base:</label>
             <input type="text" id="ipBase" placeholder="IP Base">
             <button type="button" onclick="submitSongwriter()">Submit Songwriter</button>
         </form>
@@ -123,9 +122,9 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>ID Number</th>
                     <th>Bank Name</th>
-                    <th>Bank Account</th>
-                    <th>KTP Number</th>
+                    <th>Bank Account Number</th>
                     <th>IP Names</th>
                     <th>IP Base</th>
                     <th>Status</th>
@@ -136,8 +135,6 @@
                 <!-- Songwriter data will be added here -->
             </tbody>
         </table>
-        <button onclick="exportToExcel()">Export to Excel</button>
-        <button onclick="importFromExcel()">Import from Excel</button>
     </div>
 
     <script>
@@ -145,25 +142,24 @@
 
         function submitSongwriter() {
             const name = document.getElementById('name').value;
+            const idNumber = document.getElementById('idNumber').value;
             const bankName = document.getElementById('bankName').value;
             const bankAccount = document.getElementById('bankAccount').value;
-            const ktpNumber = document.getElementById('ktpNumber').value;
+            const ipNames = Array.from(document.getElementsByClassName('ipName')).map(input => input.value).filter(value => value.trim() !== '');
+            const ipNumbers = Array.from(document.getElementsByClassName('ipNumber')).map(input => input.value).filter(value => value.trim() !== '');
             const ipBase = document.getElementById('ipBase').value;
 
-            const ipNames = [];
-            const ipNumbers = [];
-            document.querySelectorAll('.ip-names').forEach((input) => {
-                ipNames.push(input.value);
-            });
-            document.querySelectorAll('.ip-numbers').forEach((input) => {
-                ipNumbers.push(input.value);
-            });
+            if (ipNames.length !== ipNumbers.length) {
+                alert('Each IP Name must have a corresponding IP Number.');
+                return;
+            }
 
-            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipNumbers, ipBase, signed: true };
+            const songwriter = { name, idNumber, bankName, bankAccount, ipNames, ipNumbers, ipBase, signed: true };
             songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
             document.getElementById('songwriterForm').reset();
+            document.getElementById('ipNamesContainer').innerHTML = '<div class="ip-row"><input type="text" class="ipName" placeholder="IP Name"><input type="text" class="ipNumber" placeholder="IP Number"></div>';
         }
 
         function updateSongwriterTable() {
@@ -172,55 +168,73 @@
             songwriters.forEach((sw, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = sw.name;
-                row.insertCell(1).textContent = sw.ipNames.join(', ');
-                row.insertCell(2).textContent = sw.ipBase;
-                row.insertCell(3).textContent = sw.bankName;
-                row.insertCell(4).textContent = sw.bankAccount;
-                row.insertCell(5).textContent = sw.ktpNumber;
+                row.insertCell(1).textContent = sw.idNumber;
+                row.insertCell(2).textContent = sw.bankName;
+                row.insertCell(3).textContent = sw.bankAccount;
+                row.insertCell(4).textContent = sw.ipNames.join(', ') + ' (' + sw.ipNumbers.join(', ') + ')';
+                row.insertCell(5).textContent = sw.ipBase;
                 row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
                 row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
         }
 
         function addIPName() {
-            const ipName = document.getElementById('ipName').value;
-            const ipNumber = document.getElementById('ipNumber').value;
-            if (ipName && ipNumber) {
-                const container = document.createElement('div');
-                container.className = 'ip-entry';
-                container.innerHTML = `
-                    <input type="text" class="ip-names" value="${ipName}" readonly>
-                    <input type="text" class="ip-numbers" value="${ipNumber}" readonly>
-                    <button onclick="removeIPName(this)">Remove</button>
-                `;
-                document.getElementById('ipNamesContainer').appendChild(container);
-                document.getElementById('ipName').value = '';
-                document.getElementById('ipNumber').value = '';
-            }
-        }
-
-        function removeIPName(button) {
-            button.parentElement.remove();
+            const container = document.getElementById('ipNamesContainer');
+            const row = document.createElement('div');
+            row.classList.add('ip-row');
+            row.innerHTML = '<input type="text" class="ipName" placeholder="IP Name"><input type="text" class="ipNumber" placeholder="IP Number">';
+            container.appendChild(row);
         }
 
         function editSongwriter(index) {
-            // Handle edit functionality here
+            const songwriter = songwriters[index];
+            document.getElementById('name').value = songwriter.name;
+            document.getElementById('idNumber').value = songwriter.idNumber;
+            document.getElementById('bankName').value = songwriter.bankName;
+            document.getElementById('bankAccount').value = songwriter.bankAccount;
+            document.getElementById('ipBase').value = songwriter.ipBase;
+            
+            const ipNamesContainer = document.getElementById('ipNamesContainer');
+            ipNamesContainer.innerHTML = '';
+            songwriter.ipNames.forEach((name, i) => {
+                const row = document.createElement('div');
+                row.classList.add('ip-row');
+                row.innerHTML = '<input type="text" class="ipName" value="' + name + '" placeholder="IP Name"><input type="text" class="ipNumber" value="' + songwriter.ipNumbers[i] + '" placeholder="IP Number">';
+                ipNamesContainer.appendChild(row);
+            });
+
+            document.getElementById('songwriterForm').onsubmit = function() {
+                updateSongwriter(index);
+                return false;
+            };
+        }
+
+        function updateSongwriter(index) {
+            const name = document.getElementById('name').value;
+            const idNumber = document.getElementById('idNumber').value;
+            const bankName = document.getElementById('bankName').value;
+            const bankAccount = document.getElementById('bankAccount').value;
+            const ipNames = Array.from(document.getElementsByClassName('ipName')).map(input => input.value).filter(value => value.trim() !== '');
+            const ipNumbers = Array.from(document.getElementsByClassName('ipNumber')).map(input => input.value).filter(value => value.trim() !== '');
+            const ipBase = document.getElementById('ipBase').value;
+
+            if (ipNames.length !== ipNumbers.length) {
+                alert('Each IP Name must have a corresponding IP Number.');
+                return;
+            }
+
+            const updatedSongwriter = { name, idNumber, bankName, bankAccount, ipNames, ipNumbers, ipBase, signed: true };
+            songwriters[index] = updatedSongwriter;
+            localStorage.setItem('songwriters', JSON.stringify(songwriters));
+            updateSongwriterTable();
+            document.getElementById('songwriterForm').reset();
+            document.getElementById('ipNamesContainer').innerHTML = '<div class="ip-row"><input type="text" class="ipName" placeholder="IP Name"><input type="text" class="ipNumber" placeholder="IP Number"></div>';
         }
 
         function deleteSongwriter(index) {
             songwriters.splice(index, 1);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
-        }
-
-        function exportToExcel() {
-            // Functionality to export songwriters to Excel
-            // Use a library like SheetJS (xlsx) for actual implementation
-        }
-
-        function importFromExcel() {
-            // Functionality to import songwriters from Excel
-            // Use a library like SheetJS (xlsx) for actual implementation
         }
 
         // Initialize the page
