@@ -127,7 +127,7 @@
         <br>
         <button onclick="exportData()">Export Data</button>
         <input type="file" id="importFile" />
-        <button onclick="importData()">Import Data</button>
+        <button type="button" onclick="importData()">Import Data</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.6/xlsx.full.min.js"></script>
@@ -146,6 +146,24 @@
                 row.insertCell(3).innerHTML = `<input type="number" data-song="${song.title}" class="mechanicalRoyalty" placeholder="Mechanical Royalty">`;
                 row.insertCell(4).innerHTML = `<input type="number" data-song="${song.title}" class="performanceRoyalty" placeholder="Performance Royalty">`;
             });
+        }
+
+        function populatePeriodDropdown() {
+            const periodDropdown = document.getElementById('period');
+            const startYear = 2019;
+            const endYear = 2040;
+            const periods = [
+                'Jan-Jun', 'Jul-Dec'
+            ];
+
+            for (let year = startYear; year <= endYear; year++) {
+                periods.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = `${period} ${year}`;
+                    option.textContent = `${period} ${year}`;
+                    periodDropdown.appendChild(option);
+                });
+            }
         }
 
         function calculateAllRoyalties() {
@@ -214,14 +232,7 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('filterSongwriter').value;
-            let filteredData = royaltyData;
-
-            if (filterSongwriter) {
-                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
-            }
-
-            const songwriterTotals = filteredData.reduce((totals, data) => {
+            const songwriterTotals = royaltyData.reduce((totals, data) => {
                 if (!totals[data.name]) {
                     totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
                 }
@@ -293,8 +304,9 @@
             calculateAllRoyalties(); // Recalculate to ensure the filtered data is up to date
         }
 
-        // Initialize data
+        // Initialize
         populateSongTitles();
+        populatePeriodDropdown();
     </script>
 </body>
 </html>
