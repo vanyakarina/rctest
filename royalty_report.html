@@ -5,63 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Royalty Report</title>
     <style>
-        nav { /* your styles for navigation */ }
-        .content { /* your styles for content */ }
-        table { /* your styles for table */ }
-        .filter-section { margin-bottom: 20px; }
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
     <nav>
         <a href="index.html">Home</a>
-        <a href="songwriters.html">Songwriters Input</a>
-        <a href="catalogue.html">Catalogue Input</a>
-        <a href="royalty.html">Royalty Calculation</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
         <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
-    <div class="content">
+    <div class="container">
         <h1>Royalty Report</h1>
-        
-        <!-- Filter Section -->
-        <div class="filter-section">
-            <label for="filterSongwriter">Filter by Songwriter:</label>
-            <select id="filterSongwriter" onchange="filterBySongwriter()">
-                <option value="">Select Songwriter</option>
-                <!-- Songwriter options will be populated here -->
-            </select>
-        </div>
-
-        <h2>Input Royalties</h2>
-        <form id="royaltyForm">
-            <label for="period">Royalty Period:</label>
-            <select id="period" required>
-                <!-- Period options -->
-                <option value="Jan-Jun 2020">Jan-Jun 2020</option>
-                <option value="Jul-Dec 2020">Jul-Dec 2020</option>
-                <!-- More periods from 2020 to 2030 -->
-            </select>
-            
-            <h3>Enter Royalties for Each Song</h3>
-            <div id="songsContainer">
-                <!-- Songs will be listed here -->
-            </div>
-            
-            <button type="button" onclick="calculateRoyalties()">Calculate Royalties</button>
+        <form id="reportForm">
+            <label for="reportDate">Date:</label>
+            <input type="date" id="reportDate" required>
+            <button type="button" onclick="generateReport()">Generate Report</button>
         </form>
-        
-        <h2>Calculated Royalties</h2>
-        <table id="royaltyTable">
+
+        <h2>Royalty Report</h2>
+        <table id="reportTable">
             <thead>
                 <tr>
                     <th>Song Title</th>
-                    <th>Total Royalties</th>
                     <th>Songwriter</th>
+                    <th>Role</th>
                     <th>Share (%)</th>
+                    <th>Total Royalty</th>
+                    <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Calculated royalties will be shown here -->
+                <!-- Report data will be added here -->
             </tbody>
         </table>
     </div>
@@ -69,123 +86,66 @@
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
-        let royalties = {};
 
-        function populateFilterOptions() {
-            const filterSelect = document.getElementById('filterSongwriter');
-            songwriters.forEach(sw => {
-                const option = document.createElement('option');
-                option.value = sw.name;
-                option.textContent = sw.name;
-                filterSelect.appendChild(option);
-            });
-        }
+        function generateReport() {
+            const reportDate = document.getElementById('reportDate').value;
+            const reportTableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+            reportTableBody.innerHTML = '';
 
-        function renderSongs() {
-            const container = document.getElementById('songsContainer');
-            container.innerHTML = '';
+            let totalRoyalties = [];
 
-            catalogue.forEach(song => {
-                const songDiv = document.createElement('div');
-                songDiv.className = 'song-entry';
-
-                const titleLabel = document.createElement('label');
-                titleLabel.textContent = `Song Title: ${song.title}`;
-                songDiv.appendChild(titleLabel);
-
-                const digitalLabel = document.createElement('label');
-                digitalLabel.textContent = 'Digital Royalty:';
-                const digitalInput = document.createElement('input');
-                digitalInput.type = 'number';
-                digitalInput.id = `digital_${song.title}`;
-                songDiv.appendChild(digitalLabel);
-                songDiv.appendChild(digitalInput);
-
-                const synchLabel = document.createElement('label');
-                synchLabel.textContent = 'Synch Royalty:';
-                const synchInput = document.createElement('input');
-                synchInput.type = 'number';
-                synchInput.id = `synch_${song.title}`;
-                songDiv.appendChild(synchLabel);
-                songDiv.appendChild(synchInput);
-
-                const performanceLabel = document.createElement('label');
-                performanceLabel.textContent = 'Performance Royalty:';
-                const performanceInput = document.createElement('input');
-                performanceInput.type = 'number';
-                performanceInput.id = `performance_${song.title}`;
-                songDiv.appendChild(performanceLabel);
-                songDiv.appendChild(performanceInput);
-
-                const mechanicalLabel = document.createElement('label');
-                mechanicalLabel.textContent = 'Mechanical Royalty:';
-                const mechanicalInput = document.createElement('input');
-                mechanicalInput.type = 'number';
-                mechanicalInput.id = `mechanical_${song.title}`;
-                songDiv.appendChild(mechanicalLabel);
-                songDiv.appendChild(mechanicalInput);
-
-                container.appendChild(songDiv);
-            });
-        }
-
-        function calculateRoyalties() {
-            const period = document.getElementById('period').value;
-            const report = {};
-            catalogue.forEach(song => {
-                const digital = parseFloat(document.getElementById(`digital_${song.title}`).value) || 0;
-                const synch = parseFloat(document.getElementById(`synch_${song.title}`).value) || 0;
-                const performance = parseFloat(document.getElementById(`performance_${song.title}`).value) || 0;
-                const mechanical = parseFloat(document.getElementById(`mechanical_${song.title}`).value) || 0;
-
-                const total = digital + synch + performance + mechanical;
-                report[song.title] = { total, songwriters: song.songwriters };
-            });
-
-            const royaltiesTable = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
-            royaltiesTable.innerHTML = '';
-
-            songwriters.forEach(sw => {
-                Object.keys(report).forEach(title => {
-                    const song = report[title];
-                    const share = song.songwriters.find(s => s.name === sw.name)?.share || 0;
-                    if (share > 0) {
-                        const row = royaltiesTable.insertRow();
-                        row.insertCell(0).textContent = title;
-                        row.insertCell(1).textContent = song.total;
-                        row.insertCell(2).textContent = sw.name;
-                        row.insertCell(3).textContent = share;
+            catalogue.forEach(entry => {
+                entry.songwriters.forEach(sw => {
+                    let songwriter = songwriters.find(s => s.name === sw.name);
+                    if (songwriter && songwriter.signed) {
+                        let amount = (sw.share / 100) * getTotalRoyalty(entry.title);
+                        totalRoyalties.push({
+                            title: entry.title,
+                            name: sw.name,
+                            role: sw.role,
+                            share: sw.share,
+                            totalRoyalty: getTotalRoyalty(entry.title),
+                            amount: amount.toFixed(2)
+                        });
                     }
                 });
             });
-        }
 
-        function filterBySongwriter() {
-            const filterName = document.getElementById('filterSongwriter').value;
-            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-
-            songwriters.forEach(sw => {
-                if (filterName === '' || sw.name === filterName) {
-                    Object.keys(royalties).forEach(title => {
-                        const song = royalties[title];
-                        const share = song.songwriters.find(s => s.name === sw.name)?.share || 0;
-                        if (share > 0) {
-                            const row = tableBody.insertRow();
-                            row.insertCell(0).textContent = title;
-                            row.insertCell(1).textContent = song.total;
-                            row.insertCell(2).textContent = sw.name;
-                            row.insertCell(3).textContent = share;
-                        }
-                    });
-                }
+            totalRoyalties.forEach(royalty => {
+                const row = reportTableBody.insertRow();
+                row.insertCell(0).textContent = royalty.title;
+                row.insertCell(1).textContent = royalty.name;
+                row.insertCell(2).textContent = royalty.role;
+                row.insertCell(3).textContent = royalty.share;
+                row.insertCell(4).textContent = royalty.totalRoyalty.toFixed(2);
+                row.insertCell(5).textContent = royalty.amount;
             });
         }
 
-        window.onload = () => {
-            populateFilterOptions();
-            renderSongs();
-        };
+        function getTotalRoyalty(songTitle) {
+            // This function should retrieve the total royalty amount for the given song title
+            let total = 0;
+            catalogue.forEach(entry => {
+                if (entry.title === songTitle) {
+                    total = entry.songwriters.reduce((sum, sw) => {
+                        return sum + (sw.share / 100) * getSongTotalRoyalty(entry.title);
+                    }, 0);
+                }
+            });
+            return total;
+        }
+
+        function getSongTotalRoyalty(songTitle) {
+            // This function should retrieve the song's total royalty based on its title
+            let song = catalogue.find(entry => entry.title === songTitle);
+            if (song) {
+                // Assuming total royalties are distributed equally among the songwriters for simplicity
+                return (song.digitalRoyalty || 0) + (song.syncrRoyalty || 0) + (song.performanceRoyalty || 0) + (song.mechanicalRoyalty || 0);
+            }
+            return 0;
+        }
+
+        // Initialize the page
     </script>
 </body>
 </html>
