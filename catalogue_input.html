@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogue Input</title>
+    <title>Catalogue Registration</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
         }
         .container {
             max-width: 900px;
@@ -20,113 +32,182 @@
             border-radius: 8px;
         }
         h1 {
-            text-align: center;
             color: #333;
         }
-        .form-group {
-            margin-bottom: 15px;
+        form {
+            margin-bottom: 20px;
         }
-        .form-group label {
+        label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin: 5px 0;
         }
-        .form-group input,
-        .form-group select {
+        input, select {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
+            margin: 5px 0 15px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        .form-group input[type="text"] {
-            width: calc(100% - 22px); /* Adjust width for padding and border */
-        }
-        .form-group button {
-            background-color: #28a745;
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
             color: white;
             border: none;
-            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
         }
-        .form-group button:hover {
-            background-color: #218838;
+        button:hover {
+            background-color: #0056b3;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         table, th, td {
-            border: 1px solid #ddd;
+            border: 1px solid black;
         }
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
         }
     </style>
 </head>
 <body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
+        <a href="royalty_report.html">Royalty Report</a>
+    </nav>
+
     <div class="container">
-        <h1>Catalogue Input</h1>
+        <h1>Catalogue Registration</h1>
         <form id="catalogueForm">
-            <div class="form-group">
-                <label for="songTitle">Song Title</label>
-                <input type="text" id="songTitle" name="songTitle" required>
+            <label for="title">Song Title:</label>
+            <input type="text" id="title" placeholder="Song Title" required>
+            <label for="releaseDate">Release Date:</label>
+            <input type="date" id="releaseDate" required>
+            <label for="distributor">Distributor:</label>
+            <input type="text" id="distributor" placeholder="Distributor" required>
+            <label for="isrc">ISRC:</label>
+            <input type="text" id="isrc" placeholder="ISRC (optional)">
+            <label for="songwriters">Songwriters:</label>
+            <div id="songwriters">
+                <!-- Songwriter inputs will be added here -->
             </div>
-            <div class="form-group">
-                <label for="recordLabel">Record Label</label>
-                <input type="text" id="recordLabel" name="recordLabel" required>
-            </div>
-            <div class="form-group">
-                <label for="releaseDate">Release Date</label>
-                <input type="date" id="releaseDate" name="releaseDate" required>
-            </div>
-            <div class="form-group">
-                <label for="distributor">Distributor</label>
-                <input type="text" id="distributor" name="distributor" required>
-            </div>
-            <div class="form-group">
-                <label for="isrc">ISRC</label>
-                <input type="text" id="isrc" name="isrc">
-            </div>
-            <div class="form-group">
-                <label for="songwriters">Songwriters</label>
-                <select id="songwriters" name="songwriters[]" multiple required>
-                    <!-- Options will be dynamically filled from the songwriter list -->
-                </select>
-                <div class="form-group">
-                    <label for="newSongwriter">Add New Songwriter</label>
-                    <input type="text" id="newSongwriter" name="newSongwriter" placeholder="Enter new songwriter name">
-                </div>
-                <div class="form-group">
-                    <label for="share">Share (%)</label>
-                    <input type="number" id="share" name="share" min="0" max="100" required>
-                </div>
-                <div class="form-group">
-                    <label for="role">Role (A/C/CA)</label>
-                    <select id="role" name="role" required>
-                        <option value="A">Author</option>
-                        <option value="C">Composer</option>
-                        <option value="CA">Composer and Author</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit">Submit</button>
+            <button type="button" onclick="addSongwriterInput()">Add Songwriter</button>
+            <br><br>
+            <button type="button" onclick="submitCatalogue()">Submit Catalogue</button>
         </form>
+
+        <h2>Catalogue List</h2>
+        <table id="catalogueTable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Release Date</th>
+                    <th>Distributor</th>
+                    <th>ISRC</th>
+                    <th>Songwriters</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Catalogue data will be added here -->
+            </tbody>
+        </table>
     </div>
+
     <script>
-        // Example script to handle dynamic addition of songwriters
-        document.getElementById('catalogueForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            // Handle form submission logic here
-        });
+        let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+
+        function addSongwriterInput() {
+            const songwriterDiv = document.getElementById('songwriters');
+            const songwriterInput = document.createElement('div');
+            songwriterInput.innerHTML = `
+                <input type="text" class="songwriterName" placeholder="Songwriter Name" list="songwriterList">
+                <input type="number" class="share" placeholder="Share (%)" min="1" max="100" required>
+                <select class="role">
+                    <option value="">Select Role</option>
+                    <option value="A">Author</option>
+                    <option value="C">Composer</option>
+                    <option value="CA">Composer & Author</option>
+                </select>
+                <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
+                <br><br>
+            `;
+            songwriterDiv.appendChild(songwriterInput);
+        }
+
+        function removeSongwriterInput(button) {
+            button.parentElement.remove();
+        }
+
+        function submitCatalogue() {
+            const title = document.getElementById('title').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const distributor = document.getElementById('distributor').value;
+            const isrc = document.getElementById('isrc').value;
+            const songwriterInputs = document.querySelectorAll('#songwriters > div');
+            let totalShare = 0;
+            let songwritersData = [];
+
+            songwriterInputs.forEach(input => {
+                const name = input.querySelector('.songwriterName').value;
+                const share = parseFloat(input.querySelector('.share').value) || 0;
+                const role = input.querySelector('.role').value;
+                totalShare += share;
+
+                let status = 'Unsigned';
+                if (songwriters.find(sw => sw.name === name)) {
+                    status = 'Signed';
+                }
+
+                songwritersData.push({ name, share, role, status });
+            });
+
+            if (totalShare !== 100) {
+                alert('Total share percentage must be 100%.');
+                return;
+            }
+
+            const catalogueEntry = { title, releaseDate, distributor, isrc, songwriters: songwritersData };
+            catalogue.push(catalogueEntry);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
+            document.getElementById('catalogueForm').reset();
+            document.getElementById('songwriters').innerHTML = '';
+        }
+
+        function updateCatalogueTable() {
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            catalogue.forEach((entry, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = entry.title;
+                row.insertCell(1).textContent = entry.releaseDate;
+                row.insertCell(2).textContent = entry.distributor;
+                row.insertCell(3).textContent = entry.isrc || 'N/A';
+                row.insertCell(4).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
+                row.insertCell(5).innerHTML = '<button onclick="editCatalogue(' + index + ')">Edit</button> <button onclick="deleteCatalogue(' + index + ')">Delete</button>';
+            });
+        }
+
+        function editCatalogue(index) {
+            // Handle edit functionality here
+        }
+
+        function deleteCatalogue(index) {
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
+        }
+
+        // Initialize the page
+        updateCatalogueTable();
     </script>
 </body>
 </html>
