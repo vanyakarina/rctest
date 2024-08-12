@@ -42,86 +42,144 @@
         <a href="songwriters.html">Songwriters Input</a>
         <a href="catalogue.html">Catalogue Input</a>
         <a href="royalty.html">Royalty Calculation</a>
+        <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
     <div class="content">
         <h1>Royalty Calculation</h1>
         <form id="royaltyForm">
-            <label for="songSelect">Select Song:</label>
-            <select id="songSelect"></select>
-            <input type="number" id="digitalRoyalty" placeholder="Digital Royalty" step="0.01" required>
-            <input type="number" id="synchRoyalty" placeholder="Synch Royalty" step="0.01" required>
-            <input type="number" id="mechanicalRoyalty" placeholder="Mechanical Royalty" step="0.01" required>
-            <input type="number" id="performanceRoyalty" placeholder="Performance Royalty" step="0.01" required>
+            <label for="songTitle">Song Title:</label>
+            <select id="songTitle" required>
+                <option value="">Select a song</option>
+                <!-- Options will be filled by JavaScript -->
+            </select>
+            <br><br>
+            <label for="digitalRoyalty">Digital Royalty:</label>
+            <input type="number" id="digitalRoyalty" placeholder="Digital Royalty" required>
+            <br><br>
+            <label for="synchRoyalty">Synch Royalty:</label>
+            <input type="number" id="synchRoyalty" placeholder="Synch Royalty" required>
+            <br><br>
+            <label for="mechanicalRoyalty">Mechanical Royalty:</label>
+            <input type="number" id="mechanicalRoyalty" placeholder="Mechanical Royalty" required>
+            <br><br>
+            <label for="performanceRoyalty">Performance Royalty:</label>
+            <input type="number" id="performanceRoyalty" placeholder="Performance Royalty" required>
+            <br><br>
             <button type="button" onclick="calculateRoyalty()">Calculate Royalty</button>
         </form>
 
-        <h2>Results</h2>
-        <p>Total Royalty: <span id="totalRoyalty">0</span></p>
-        <h3>Songwriters' Royalties</h3>
+        <h2>Royalty Breakdown</h2>
         <table id="royaltyTable">
             <thead>
                 <tr>
                     <th>Songwriter</th>
-                    <th>Share (%)</th>
-                    <th>Royalty Amount</th>
+                    <th>Status</th>
+                    <th>Royalty</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Royalty data will be added here -->
             </tbody>
         </table>
+
+        <h2>Total Royalty</h2>
+        <p id="totalRoyalty">Total Royalty: $0.00</p>
     </div>
 
     <script>
-        // Assuming catalogue and songwriters data are stored in localStorage
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
-        function populateSongSelect() {
-            const select = document.getElementById('songSelect');
-            select.innerHTML = '';
+        function populateSongTitles() {
+            const songTitleSelect = document.getElementById('songTitle');
             catalogue.forEach(song => {
                 const option = document.createElement('option');
                 option.value = song.title;
-                option.text = song.title;
-                select.add(option);
+                option.textContent = song.title;
+                songTitleSelect.appendChild(option);
             });
         }
 
         function calculateRoyalty() {
-            const songTitle = document.getElementById('songSelect').value;
+            const songTitle = document.getElementById('songTitle').value;
             const digitalRoyalty = parseFloat(document.getElementById('digitalRoyalty').value) || 0;
             const synchRoyalty = parseFloat(document.getElementById('synchRoyalty').value) || 0;
             const mechanicalRoyalty = parseFloat(document.getElementById('mechanicalRoyalty').value) || 0;
             const performanceRoyalty = parseFloat(document.getElementById('performanceRoyalty').value) || 0;
 
-            const song = catalogue.find(song => song.title === songTitle);
-            if (!song) {
-                alert('Song not found in catalogue.');
+            if (!songTitle) {
+                alert('Please select a song.');
                 return;
             }
 
+            const song = catalogue.find(s => s.title === songTitle);
             const totalRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
-            document.getElementById('totalRoyalty').textContent = totalRoyalty.toFixed(2);
 
-            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
+            let totalDistributedRoyalty = 0;
+            let royaltyData = [];
 
             song.songwriters.forEach(sw => {
-                const songwriter = songwriters.find(swItem => swItem.name === sw.name);
-                if (songwriter) {
-                    const royaltyAmount = (sw.share / 100) * totalRoyalty;
-                    const row = tableBody.insertRow();
-                    row.insertCell(0).textContent = sw.name;
-                    row.insertCell(1).textContent = sw.share;
-                    row.insertCell(2).textContent = royaltyAmount.toFixed(2);
+                const songwriter = songwriters.find(s => s.name === sw.name);
+                const share = sw.share;
+                const isSigned = songwriter && songwriter.signed;
+                let royalty = 0;
+
+                if (isSigned) {
+                    royalty = (share / 100) * totalRoyalty;
+                    totalDistributedRoyalty += royalty;
+                } else {
+                    // Add to unsigned total (to be distributed to signed songwriters later)
+                    totalDistributedRoyalty += (share / 100) * totalRoyalty;
                 }
+
+                royaltyData.push({
+                    name: sw.name,
+                    status: isSigned ? 'Signed' : 'Unsigned',
+                    royalty
+                });
             });
+
+            // Distribute unsigned songwriters' royalties to signed ones
+            let signedSongwriters = songwriters.filter(s => s.signed);
+            if (signedSongwriters.length > 0) {
+                const distributedRoyalty = totalDistributedRoyalty / signedSongwriters.length;
+                royaltyData.forEach(data => {
+                    if (data.status === 'Unsigned') {
+                        // Find signed songwriters and add the distributed royalties
+                        signedSongwriters.forEach(sw => {
+                            const existing = royaltyData.find(d => d.name === sw.name);
+                            if (existing) {
+                                existing.royalty += distributedRoyalty;
+                            } else {
+                                royaltyData.push({
+                                    name: sw.name,
+                                    status: 'Signed',
+                                    royalty: distributedRoyalty
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            updateRoyaltyTable(royaltyData, totalRoyalty);
         }
 
-        // Initialize page with song options
-        populateSongSelect();
+        function updateRoyaltyTable(royaltyData, totalRoyalty) {
+            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            royaltyData.forEach(data => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = data.name;
+                row.insertCell(1).textContent = data.status;
+                row.insertCell(2).textContent = data.royalty.toFixed(2);
+            });
+            document.getElementById('totalRoyalty').textContent = `Total Royalty: $${totalRoyalty.toFixed(2)}`;
+        }
+
+        // Initialize the page
+        populateSongTitles();
     </script>
 </body>
 </html>
