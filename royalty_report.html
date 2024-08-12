@@ -130,6 +130,7 @@
         <button onclick="importData()">Import Data</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.6/xlsx.full.min.js"></script>
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
@@ -234,49 +235,24 @@
 
             const filteredTableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             filteredTableBody.innerHTML = '';
-            Object.keys(songwriterTotals).forEach(name => {
-                const data = songwriterTotals[name];
+            for (const [name, totals] of Object.entries(songwriterTotals)) {
                 const row = filteredTableBody.insertRow();
                 row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = data.digital.toFixed(2);
-                row.insertCell(2).textContent = data.synch.toFixed(2);
-                row.insertCell(3).textContent = data.mechanical.toFixed(2);
-                row.insertCell(4).textContent = data.performance.toFixed(2);
-                row.insertCell(5).textContent = data.total.toFixed(2);
-            });
-        }
-
-        function populatePeriods() {
-            const periodSelect = document.getElementById('period');
-            const startYear = 2019;
-            const endYear = 2040;
-            let periods = [];
-
-            for (let year = startYear; year <= endYear; year++) {
-                periods.push(`Jan-Jun ${year}`);
-                periods.push(`Jul-Dec ${year}`);
+                row.insertCell(1).textContent = totals.digital.toFixed(2);
+                row.insertCell(2).textContent = totals.synch.toFixed(2);
+                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
+                row.insertCell(4).textContent = totals.performance.toFixed(2);
+                row.insertCell(5).textContent = totals.total.toFixed(2);
             }
-
-            periods.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period;
-                option.textContent = period;
-                periodSelect.appendChild(option);
-            });
         }
 
         function exportData() {
-            const data = {
-                catalogue,
-                songwriters,
-                royalties
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'royalty_data.json';
-            a.click();
+            const workbook = XLSX.utils.book_new();
+            const royaltySheet = XLSX.utils.table_to_sheet(document.getElementById('royaltyTable'));
+            const filteredSheet = XLSX.utils.table_to_sheet(document.getElementById('filteredRoyaltyTable'));
+            XLSX.utils.book_append_sheet(workbook, royaltySheet, 'Royalty Breakdown');
+            XLSX.utils.book_append_sheet(workbook, filteredSheet, 'Filtered Royalties');
+            XLSX.writeFile(workbook, 'royalty_data.xlsx');
         }
 
         function importData() {
@@ -285,31 +261,40 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const data = JSON.parse(e.target.result);
-                    catalogue = data.catalogue || [];
-                    songwriters = data.songwriters || [];
-                    royalties = data.royalties || [];
-                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                    localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                    localStorage.setItem('royalties', JSON.stringify(royalties));
-                    populateSongTitles();
-                    updateRoyaltyTable(royalties);
-                    updateFilteredRoyaltyTable(royalties);
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const royaltySheet = workbook.Sheets['Royalty Breakdown'];
+                    const filteredSheet = workbook.Sheets['Filtered Royalties'];
+                    if (royaltySheet) {
+                        const royaltyData = XLSX.utils.sheet_to_json(royaltySheet, { header: 1 });
+                        updateTableFromImport(royaltyData, 'royaltyTable');
+                    }
+                    if (filteredSheet) {
+                        const filteredData = XLSX.utils.sheet_to_json(filteredSheet, { header: 1 });
+                        updateTableFromImport(filteredData, 'filteredRoyaltyTable');
+                    }
                 };
-                reader.readAsText(file);
+                reader.readAsArrayBuffer(file);
             }
         }
 
-        function filterBySongwriter() {
-            calculateAllRoyalties();
+        function updateTableFromImport(data, tableId) {
+            const tableBody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            data.forEach(rowData => {
+                const row = tableBody.insertRow();
+                rowData.forEach(cellData => {
+                    row.insertCell().textContent = cellData;
+                });
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            populateSongTitles();
-            populatePeriods();
-            updateRoyaltyTable(royalties);
-            updateFilteredRoyaltyTable(royalties);
-        });
+        function filterBySongwriter() {
+            calculateAllRoyalties(); // Recalculate to ensure the filtered data is up to date
+        }
+
+        // Initialize data
+        populateSongTitles();
     </script>
 </body>
 </html>
