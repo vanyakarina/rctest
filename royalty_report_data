@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royalty Report Data</title>
+    <style>
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
+        <a href="royalty_report.html">Royalty Report</a>
+        <a href="royalty_report_data.html">Royalty Report Data</a>
+    </nav>
+
+    <div class="content">
+        <h1>Royalty Report Data</h1>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Song Title</th>
+                    <th>Songwriter</th>
+                    <th>Status</th>
+                    <th>Digital Royalty</th>
+                    <th>Synch Royalty</th>
+                    <th>Mechanical Royalty</th>
+                    <th>Performance Royalty</th>
+                    <th>Total Royalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Submitted data will be filled by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function loadRoyaltyReportData() {
+            const reportTableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+            const data = JSON.parse(localStorage.getItem('royalties')) || [];
+
+            data.forEach(record => {
+                const row = reportTableBody.insertRow();
+                row.insertCell(0).textContent = record.songTitle;
+                row.insertCell(1).textContent = record.name;
+                row.insertCell(2).textContent = record.status;
+                row.insertCell(3).textContent = record.digital.toFixed(2);
+                row.insertCell(4).textContent = record.synch.toFixed(2);
+                row.insertCell(5).textContent = record.mechanical.toFixed(2);
+                row.insertCell(6).textContent = record.performance.toFixed(2);
+                row.insertCell(7).textContent = record.total.toFixed(2);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRoyaltyReportData();
+        });
+    </script>
+</body>
+</html>
