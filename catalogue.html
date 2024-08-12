@@ -16,6 +16,7 @@
         .songwriters-list table { width: 100%; border-collapse: collapse; }
         .songwriters-list th, .songwriters-list td { border: 1px solid #ddd; padding: 8px; }
         .songwriters-list th { background-color: #f2f2f2; }
+        .button-container { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -56,9 +57,13 @@
             </div>
             <div>
                 <label for="songwriters">Add Songwriters:</label>
-                <select id="songwriters" required>
+                <select id="songwriters">
                     <!-- Options will be dynamically loaded -->
                 </select>
+                <div>
+                    <label for="newSongwriterName">New Songwriter Name:</label>
+                    <input type="text" id="newSongwriterName">
+                </div>
                 <div>
                     <label for="role">Role:</label>
                     <select id="role">
@@ -90,7 +95,11 @@
                     </tbody>
                 </table>
             </div>
-            <button type="button" onclick="addCatalogue()">Add Catalogue</button>
+            <div class="button-container">
+                <button type="button" onclick="addCatalogue()">Add Catalogue</button>
+                <button type="button" onclick="exportCatalogue()">Export to Excel</button>
+                <input type="file" id="importCatalogue" accept=".xlsx" onchange="importCatalogue(event)" />
+            </div>
         </form>
 
         <h2>Catalogue List</h2>
@@ -130,33 +139,42 @@
 
         function addSongwriterToList() {
             const index = songwriterSelect.value;
+            const newSongwriterName = document.getElementById('newSongwriterName').value;
             const role = document.getElementById('role').value;
             const share = parseFloat(document.getElementById('share').value);
             const rows = document.querySelectorAll('#songwritersTable tbody tr');
             let totalShare = 0;
-            
+
             rows.forEach(row => {
                 totalShare += parseFloat(row.cells[2].textContent);
             });
 
-            if (index !== '' && !isNaN(share)) {
+            if (index !== '' || newSongwriterName) {
                 if (totalShare + share <= 100) {
-                    const songwriter = songwriters[index];
-                    const status = songwriter ? 'Signed' : 'Unsigned';
+                    const songwriter = index !== '' ? songwriters[index] : { name: newSongwriterName };
+                    const status = index !== '' ? 'Signed' : 'Unsigned';
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${songwriter.name || 'New Songwriter'}</td>
+                        <td>${songwriter.name}</td>
                         <td>${role}</td>
                         <td>${share}</td>
                         <td>${status}</td>
                         <td><button onclick="removeSongwriterFromList(this)">Remove</button></td>
                     `;
                     document.getElementById('songwritersTable').querySelector('tbody').appendChild(row);
+
+                    // Add new songwriter to the list if they are not already in the list
+                    if (index === '' && newSongwriterName) {
+                        songwriters.push({ name: newSongwriterName });
+                        localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                        loadSongwriters();
+                        document.getElementById('newSongwriterName').value = '';
+                    }
                 } else {
                     alert('The total shares must not exceed 100%.');
                 }
             } else {
-                alert('Please select a songwriter and enter a valid share percentage.');
+                alert('Please select a songwriter or enter a new songwriter name.');
             }
         }
 
@@ -196,25 +214,40 @@
             }
         }
 
-        function renderCatalogue() {
-            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-
-            catalogue.forEach((entry, index) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = entry.title;
-                row.insertCell(1).textContent = entry.recordLabel;
-                row.insertCell(2).textContent = entry.singer;
-                row.insertCell(3).textContent = entry.releaseDate;
-                row.insertCell(4).textContent = entry.distributor;
-                row.insertCell(5).textContent = entry.isrc || 'N/A';
-                row.insertCell(6).textContent = entry.songwriters.map(sw => sw.name).join(', ');
-                row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${index})">Edit</button> <button onclick="deleteCatalogue(${index})">Delete</button>`;
-            });
-        }
-
         function removeSongwriterFromList(button) {
             button.parentElement.parentElement.remove();
+        }
+
+        function exportCatalogue() {
+            // Implement export functionality here
+        }
+
+        function importCatalogue(event) {
+            // Implement import functionality here
+        }
+
+        function renderCatalogue() {
+            const catalogueTable = document.getElementById('catalogueTable');
+            catalogueTable.querySelector('tbody').innerHTML = '';
+            catalogue.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.title}</td>
+                    <td>${entry.recordLabel}</td>
+                    <td>${entry.singer}</td>
+                    <td>${entry.releaseDate}</td>
+                    <td>${entry.distributor}</td>
+                    <td>${entry.isrc}</td>
+                    <td>
+                        ${entry.songwriters.map(sw => `${sw.name} (${sw.role}, ${sw.share}%)`).join('<br>')}
+                    </td>
+                    <td>
+                        <button onclick="editCatalogue(${index})">Edit</button>
+                        <button onclick="deleteCatalogue(${index})">Delete</button>
+                    </td>
+                `;
+                catalogueTable.querySelector('tbody').appendChild(row);
+            });
         }
 
         function editCatalogue(index) {
