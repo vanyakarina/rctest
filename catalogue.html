@@ -39,7 +39,7 @@
 <body>
     <nav>
         <a href="index.html">Home</a>
-        <a href="songwriter.html">Songwriter Input</a>
+        <a href="songwriters.html">Songwriters Input</a>
         <a href="catalogue.html">Catalogue Input</a>
         <a href="royalty.html">Royalty Calculation</a>
     </nav>
@@ -48,15 +48,11 @@
         <h1>Input Catalogue Data</h1>
         <form id="catalogueForm">
             <input type="text" id="songTitle" placeholder="Song Title" required>
-            <input type="text" id="recordLabel" placeholder="Record Label" required>
-            <input type="text" id="distributor" placeholder="Distributor" required>
-            <input type="date" id="releaseDate" placeholder="Release Date" required>
-            <input type="text" id="isrc" placeholder="ISRC" required>
-            <label for="songwriterSelect">Select Songwriters:</label>
-            <select id="songwriterSelect" multiple></select>
-            <input type="text" id="role" placeholder="Role (A, C, CA)" required>
-            <input type="number" id="share" placeholder="Share (%)" required>
-            <button type="button" onclick="addCatalogue()">Add to Catalogue</button>
+            <input type="text" id="songSinger" placeholder="Singer" required>
+            <input type="text" id="songLabel" placeholder="Record Label" required>
+            <input type="text" id="songDistributor" placeholder="Distributor" required>
+            <input type="text" id="songISRC" placeholder="ISRC" required>
+            <button type="button" onclick="addSong()">Add Song</button>
         </form>
 
         <h2>Catalogue List</h2>
@@ -64,11 +60,10 @@
             <thead>
                 <tr>
                     <th>Title</th>
+                    <th>Singer</th>
                     <th>Record Label</th>
                     <th>Distributor</th>
-                    <th>Release Date</th>
                     <th>ISRC</th>
-                    <th>Songwriters</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,43 +73,23 @@
     </div>
 
     <script>
-        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
-        let catalogue = [];
+        let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
 
-        function updateSongwriterSelect() {
-            const select = document.getElementById('songwriterSelect');
-            select.innerHTML = '';
-            songwriters.forEach(sw => {
-                const option = document.createElement('option');
-                option.value = sw.name;
-                option.text = sw.name;
-                select.add(option);
-            });
-        }
-
-        function addCatalogue() {
+        function addSong() {
             const title = document.getElementById('songTitle').value;
-            const label = document.getElementById('recordLabel').value;
-            const distributor = document.getElementById('distributor').value;
-            const releaseDate = document.getElementById('releaseDate').value;
-            const isrc = document.getElementById('isrc').value;
-            const selectedOptions = document.getElementById('songwriterSelect').selectedOptions;
-            const role = document.getElementById('role').value;
-            const share = parseFloat(document.getElementById('share').value);
+            const singer = document.getElementById('songSinger').value;
+            const label = document.getElementById('songLabel').value;
+            const distributor = document.getElementById('songDistributor').value;
+            const isrc = document.getElementById('songISRC').value;
 
-            if (title && label && distributor && releaseDate && isrc && role && !isNaN(share)) {
-                const song = { title, label, distributor, releaseDate, isrc, songwriters: [] };
-
-                for (let option of selectedOptions) {
-                    const name = option.value;
-                    song.songwriters.push({ name, role, share });
-                }
-
+            if (title && singer && label && distributor && isrc) {
+                const song = { title, singer, label, distributor, isrc };
                 catalogue.push(song);
+                localStorage.setItem('catalogue', JSON.stringify(catalogue));
                 updateCatalogueTable();
                 clearCatalogueForm();
             } else {
-                alert('Please fill in all fields correctly.');
+                alert('Please fill in all fields.');
             }
         }
 
@@ -124,8 +99,19 @@
             catalogue.forEach(song => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = song.title;
-                row.insertCell(1).textContent = song.label;
-                row.insertCell(2).textContent = song.distributor;
-                row.insertCell(3).textContent = song.releaseDate;
+                row.insertCell(1).textContent = song.singer;
+                row.insertCell(2).textContent = song.label;
+                row.insertCell(3).textContent = song.distributor;
                 row.insertCell(4).textContent = song.isrc;
-                row.insertCell(5).textContent = song.songwriters.map(sw => `${sw.name} (${sw.role}, ${sw
+            });
+        }
+
+        function clearCatalogueForm() {
+            document.getElementById('catalogueForm').reset();
+        }
+
+        // Initialize page with song data
+        updateCatalogueTable();
+    </script>
+</body>
+</html>
