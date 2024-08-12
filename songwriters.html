@@ -60,12 +60,13 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 12px; /* Smaller font size */
         }
         table, th, td {
             border: 1px solid black;
         }
         th, td {
-            padding: 8px;
+            padding: 6px; /* Adjusted padding for smaller font */
             text-align: left;
         }
         th {
@@ -80,6 +81,9 @@
         }
         .ip-names-table th, .ip-base-table th {
             background-color: #f2f2f2;
+        }
+        .ip-row {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -118,6 +122,8 @@
         </form>
 
         <h2>Songwriter List</h2>
+        <button onclick="exportSongwriters()">Export Songwriters</button>
+        <input type="file" id="importFile" accept=".json" style="margin-top: 10px;" onchange="importSongwriters(event)">
         <table id="songwriterTable">
             <thead>
                 <tr>
@@ -171,7 +177,7 @@
                 row.insertCell(1).textContent = sw.idNumber;
                 row.insertCell(2).textContent = sw.bankName;
                 row.insertCell(3).textContent = sw.bankAccount;
-                row.insertCell(4).textContent = sw.ipNames.join(', ') + ' (' + sw.ipNumbers.join(', ') + ')';
+                row.insertCell(4).textContent = sw.ipNames.map((name, i) => `${name} (${sw.ipNumbers[i]})`).join(', ');
                 row.insertCell(5).textContent = sw.ipBase;
                 row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
                 row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
@@ -203,10 +209,7 @@
                 ipNamesContainer.appendChild(row);
             });
 
-            document.getElementById('songwriterForm').onsubmit = function() {
-                updateSongwriter(index);
-                return false;
-            };
+            document.getElementById('songwriterForm').innerHTML += '<button type="button" onclick="updateSongwriter(' + index + ')">Update</button>';
         }
 
         function updateSongwriter(index) {
@@ -235,6 +238,40 @@
             songwriters.splice(index, 1);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
+        }
+
+        function exportSongwriters() {
+            const dataStr = JSON.stringify(songwriters, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'songwriters.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importSongwriters(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    try {
+                        const importedSongwriters = JSON.parse(content);
+                        if (Array.isArray(importedSongwriters)) {
+                            songwriters = importedSongwriters;
+                            localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                            updateSongwriterTable();
+                        } else {
+                            alert('Invalid file format. Please upload a valid JSON file.');
+                        }
+                    } catch (error) {
+                        alert('Failed to parse JSON file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
         }
 
         // Initialize the page
