@@ -128,7 +128,11 @@
             const songwriterDiv = document.getElementById('songwriters');
             const songwriterInput = document.createElement('div');
             songwriterInput.innerHTML = `
-                <input type="text" class="songwriterName" placeholder="Songwriter Name" list="songwriterList">
+                <select class="songwriterName">
+                    <option value="">Select Songwriter</option>
+                    ${songwriters.map(sw => `<option value="${sw.name}">${sw.name} (Signed)</option>`).join('')}
+                </select>
+                <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)">
                 <input type="number" class="share" placeholder="Share (%)" min="1" max="100" required>
                 <select class="role">
                     <option value="">Select Role</option>
@@ -156,7 +160,7 @@
             let songwritersData = [];
 
             songwriterInputs.forEach(input => {
-                const name = input.querySelector('.songwriterName').value;
+                const name = input.querySelector('.songwriterName').value || input.querySelector('.newSongwriterName').value;
                 const share = parseFloat(input.querySelector('.share').value) || 0;
                 const role = input.querySelector('.role').value;
                 totalShare += share;
@@ -167,6 +171,10 @@
                 }
 
                 songwritersData.push({ name, share, role, status });
+
+                if (!status) {
+                    songwriters.push({ name, signed: false });
+                }
             });
 
             if (totalShare !== 100) {
@@ -177,6 +185,7 @@
             const catalogueEntry = { title, releaseDate, distributor, isrc, songwriters: songwritersData };
             catalogue.push(catalogueEntry);
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateCatalogueTable();
             document.getElementById('catalogueForm').reset();
             document.getElementById('songwriters').innerHTML = '';
