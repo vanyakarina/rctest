@@ -45,12 +45,11 @@
         <a href="songwriters.html">Songwriters</a>
         <a href="royalty_calculator.html">Royalty Calculator</a>
         <a href="royalty_report.html">Royalty Report</a>
-        <a href="royalty_report_data.html">Royalty Report Data</a>
     </nav>
 
     <div class="content">
         <h1>Royalty Calculator</h1>
-        <form id="royaltyForm" onsubmit="saveRoyaltyReport(event)">
+        <form id="royaltyForm" onsubmit="return false;">
             <h2>Input Royalties</h2>
             <table id="inputTable">
                 <thead>
@@ -68,15 +67,6 @@
             </table>
             <br>
             <button type="button" onclick="calculateAllRoyalties()">Calculate All Royalties</button>
-            <br><br>
-
-            <h2>Select Period</h2>
-            <select id="period">
-                <!-- Options will be filled by JavaScript -->
-            </select>
-            <br><br>
-
-            <button type="submit">Save</button>
             <br><br>
         </form>
 
@@ -245,105 +235,56 @@
         }
 
         function exportRoyaltyBreakdown() {
-            const table = document.getElementById('royaltyTable');
-            const wb = XLSX.utils.table_to_book(table);
-            XLSX.writeFile(wb, 'royalty_breakdown.xlsx');
+            exportTableToExcel('royaltyTable', 'Royalty_Breakdown');
         }
 
         function exportTotalRoyalties() {
-            const table = document.getElementById('filteredRoyaltyTable');
-            const wb = XLSX.utils.table_to_book(table);
-            XLSX.writeFile(wb, 'total_royalties.xlsx');
+            exportTableToExcel('filteredRoyaltyTable', 'Total_Royalties');
+        }
+
+        function exportTableToExcel(tableId, filename) {
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.table_to_sheet(document.getElementById(tableId));
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, `${filename}.xlsx`);
         }
 
         function importData() {
             const input = document.getElementById('importFile');
             const file = input.files[0];
-
             const reader = new FileReader();
-            reader.onload = function (e) {
+
+            reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const importedData = XLSX.utils.sheet_to_json(worksheet);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const importedData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
                 const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
-
-                importedData.forEach(row => {
-                    const title = row['Song Title'];
-                    const digital = row['Digital Royalty'] || 0;
-                    const synch = row['Synch Royalty'] || 0;
-                    const mechanical = row['Mechanical Royalty'] || 0;
-                    const performance = row['Performance Royalty'] || 0;
-
-                    const matchingRow = Array.from(inputTableBody.rows).find(r => r.cells[0].textContent === title);
-                    if (matchingRow) {
-                        matchingRow.querySelector('.digitalRoyalty').value = digital;
-                        matchingRow.querySelector('.synchRoyalty').value = synch;
-                        matchingRow.querySelector('.mechanicalRoyalty').value = mechanical;
-                        matchingRow.querySelector('.performanceRoyalty').value = performance;
+                importedData.slice(1).forEach((row, index) => {
+                    const inputRow = inputTableBody.rows[index];
+                    if (inputRow) {
+                        inputRow.cells[1].querySelector('input').value = row[1] || 0;
+                        inputRow.cells[2].querySelector('input').value = row[2] || 0;
+                        inputRow.cells[3].querySelector('input').value = row[3] || 0;
+                        inputRow.cells[4].querySelector('input').value = row[4] || 0;
                     }
                 });
             };
+
             reader.readAsArrayBuffer(file);
         }
 
         function downloadTemplate() {
-            const headers = ['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty'];
-            const worksheet = XLSX.utils.aoa_to_sheet([headers]);
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, worksheet, 'Template');
-            XLSX.writeFile(wb, 'royalty_template.xlsx');
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet([
+                ['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty']
+            ]);
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, 'Royalty_Template.xlsx');
         }
 
-        function populatePeriodDropdown() {
-            const periodDropdown = document.getElementById('period');
-            const startYear = 2019;
-            const endYear = 2040;
-            const periods = [];
-
-            for (let year = startYear; year <= endYear; year++) {
-                periods.push(`Jan-Jun ${year}`);
-                periods.push(`Jul-Dec ${year}`);
-            }
-
-            periods.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period;
-                option.textContent = period;
-                periodDropdown.appendChild(option);
-            });
-        }
-
-        function saveRoyaltyReport(event) {
-            event.preventDefault();
-            
-            const period = document.getElementById('period').value;
-            const dataToSave = {
-                period: period,
-                royalties: royalties
-            };
-
-            let royaltyReports = JSON.parse(localStorage.getItem('royaltyReports')) || [];
-            const existingReportIndex = royaltyReports.findIndex(report => report.period === period);
-
-            if (existingReportIndex !== -1) {
-                royaltyReports[existingReportIndex] = dataToSave;
-            } else {
-                royaltyReports.push(dataToSave);
-            }
-
-            localStorage.setItem('royaltyReports', JSON.stringify(royaltyReports));
-            alert('Royalty report saved successfully!');
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            populateSongTitles();
-            populatePeriodDropdown();
-        });
+        window.onload = populateSongTitles;
     </script>
 </body>
 </html>
