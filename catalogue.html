@@ -6,9 +6,12 @@
     <title>Catalogue Input</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        nav { /* your styles */ }
-        .content { /* your styles */ }
-        table { /* your styles */ }
+        nav { /* your styles for navigation */ }
+        .content { /* your styles for content */ }
+        table { /* your styles for table */ }
+        .songwriters-list { margin-top: 20px; }
+        .songwriters-list label { display: block; margin-top: 5px; }
+        .edit-button { margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -23,42 +26,144 @@
     <div class="content">
         <h1>Catalogue Input</h1>
         <form id="catalogueForm">
-            <label for="title">Song Title:</label>
-            <input type="text" id="title" required>
+            <h2>Input Song Details</h2>
+            <label for="songTitle">Song Title:</label>
+            <input type="text" id="songTitle" required>
+
+            <label for="recordLabel">Record Label:</label>
+            <input type="text" id="recordLabel" required>
+
             <label for="singer">Singer:</label>
             <input type="text" id="singer" required>
+
             <label for="releaseDate">Release Date:</label>
             <input type="date" id="releaseDate" required>
+
             <label for="distributor">Distributor:</label>
             <input type="text" id="distributor" required>
+
             <label for="isrc">ISRC:</label>
             <input type="text" id="isrc" required>
-            <button type="button" onclick="addSong()">Add Song</button>
+
+            <div id="songwritersSection">
+                <h3>Songwriters</h3>
+                <div id="songwritersList" class="songwriters-list">
+                    <!-- Songwriter inputs will be added here -->
+                </div>
+                <button type="button" onclick="addSongwriter()">Add Songwriter</button>
+            </div>
+
+            <button type="button" onclick="addSongToCatalogue()">Add Song to Catalogue</button>
         </form>
 
         <h2>Catalogue List</h2>
         <table id="catalogueTable">
             <thead>
                 <tr>
-                    <th>Title</th>
+                    <th>Song Title</th>
+                    <th>Record Label</th>
                     <th>Singer</th>
                     <th>Release Date</th>
                     <th>Distributor</th>
                     <th>ISRC</th>
+                    <th>Songwriters</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Catalogue items will be added here -->
+                <!-- Catalogue data will be added here -->
             </tbody>
         </table>
-
-        <button onclick="exportToExcel('catalogue', catalogue)">Export Catalogue to Excel</button>
-        <input type="file" id="importFile" accept=".xlsx" onchange="importFromExcel(event, 'catalogue')"/>
     </div>
 
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+
+        function addSongwriter() {
+            const songwritersList = document.getElementById('songwritersList');
+            const writerCount = songwritersList.children.length;
+            const writerDiv = document.createElement('div');
+
+            const nameLabel = document.createElement('label');
+            nameLabel.textContent = `Songwriter ${writerCount + 1}:`;
+            const nameInput = document.createElement('select');
+            nameInput.id = `songwriterName_${writerCount}`;
+            songwriters.forEach(sw => {
+                const option = document.createElement('option');
+                option.value = sw.name;
+                option.textContent = sw.name;
+                nameInput.appendChild(option);
+            });
+            const addUnsignedOption = document.createElement('option');
+            addUnsignedOption.value = 'Unsigned';
+            addUnsignedOption.textContent = 'Add New Songwriter';
+            nameInput.appendChild(addUnsignedOption);
+            nameInput.addEventListener('change', function() {
+                if (this.value === 'Unsigned') {
+                    const newName = prompt('Enter the name of the unsigned songwriter:');
+                    if (newName) {
+                        const newOption = document.createElement('option');
+                        newOption.value = newName;
+                        newOption.textContent = newName;
+                        nameInput.insertBefore(newOption, addUnsignedOption);
+                        nameInput.value = newName;
+                    }
+                }
+            });
+
+            const roleLabel = document.createElement('label');
+            roleLabel.textContent = 'Role (A/C/CA):';
+            const roleInput = document.createElement('input');
+            roleInput.type = 'text';
+            roleInput.id = `role_${writerCount}`;
+
+            const shareLabel = document.createElement('label');
+            shareLabel.textContent = 'Share (%):';
+            const shareInput = document.createElement('input');
+            shareInput.type = 'number';
+            shareInput.id = `share_${writerCount}`;
+
+            writerDiv.appendChild(nameLabel);
+            writerDiv.appendChild(nameInput);
+            writerDiv.appendChild(roleLabel);
+            writerDiv.appendChild(roleInput);
+            writerDiv.appendChild(shareLabel);
+            writerDiv.appendChild(shareInput);
+
+            songwritersList.appendChild(writerDiv);
+        }
+
+        function addSongToCatalogue() {
+            const songTitle = document.getElementById('songTitle').value;
+            const recordLabel = document.getElementById('recordLabel').value;
+            const singer = document.getElementById('singer').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const distributor = document.getElementById('distributor').value;
+            const isrc = document.getElementById('isrc').value;
+
+            const songwriters = [];
+            document.querySelectorAll('#songwritersList > div').forEach(div => {
+                const name = div.querySelector('select').value;
+                const role = div.querySelector('input[type="text"]').value;
+                const share = parseFloat(div.querySelector('input[type="number"]').value) || 0;
+                songwriters.push({ name, role, share });
+            });
+
+            const song = {
+                title: songTitle,
+                recordLabel,
+                singer,
+                releaseDate,
+                distributor,
+                isrc,
+                songwriters
+            };
+
+            catalogue.push(song);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            renderCatalogue();
+        }
 
         function renderCatalogue() {
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
@@ -67,62 +172,120 @@
             catalogue.forEach((song, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = song.title;
-                row.insertCell(1).textContent = song.singer;
-                row.insertCell(2).textContent = song.releaseDate;
-                row.insertCell(3).textContent = song.distributor;
-                row.insertCell(4).textContent = song.isrc;
-                const deleteCell = row.insertCell(5);
-                deleteCell.innerHTML = `<button onclick="deleteSong(${index})">Delete</button>`;
+                row.insertCell(1).textContent = song.recordLabel;
+                row.insertCell(2).textContent = song.singer;
+                row.insertCell(3).textContent = song.releaseDate;
+                row.insertCell(4).textContent = song.distributor;
+                row.insertCell(5).textContent = song.isrc;
+
+                const songwritersCell = row.insertCell(6);
+                songwritersCell.textContent = song.songwriters.map(sw => `${sw.name} (${sw.role}, ${sw.share}%)`).join(', ');
+
+                const actionsCell = row.insertCell(7);
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.className = 'edit-button';
+                editButton.onclick = () => editSong(index);
+                actionsCell.appendChild(editButton);
             });
         }
 
-        function addSong() {
-            const title = document.getElementById('title').value;
+        function editSong(index) {
+            const song = catalogue[index];
+            document.getElementById('songTitle').value = song.title;
+            document.getElementById('recordLabel').value = song.recordLabel;
+            document.getElementById('singer').value = song.singer;
+            document.getElementById('releaseDate').value = song.releaseDate;
+            document.getElementById('distributor').value = song.distributor;
+            document.getElementById('isrc').value = song.isrc;
+
+            const songwritersSection = document.getElementById('songwritersList');
+            songwritersSection.innerHTML = '';
+            song.songwriters.forEach((sw, i) => {
+                const writerDiv = document.createElement('div');
+
+                const nameLabel = document.createElement('label');
+                nameLabel.textContent = `Songwriter ${i + 1}:`;
+                const nameInput = document.createElement('select');
+                nameInput.id = `songwriterName_${i}`;
+                const option = document.createElement('option');
+                option.value = sw.name;
+                option.textContent = sw.name;
+                nameInput.appendChild(option);
+                nameInput.addEventListener('change', function() {
+                    if (this.value === 'Unsigned') {
+                        const newName = prompt('Enter the name of the unsigned songwriter:');
+                        if (newName) {
+                            const newOption = document.createElement('option');
+                            newOption.value = newName;
+                            newOption.textContent = newName;
+                            nameInput.insertBefore(newOption, this.options[0]);
+                            nameInput.value = newName;
+                        }
+                    }
+                });
+
+                const roleLabel = document.createElement('label');
+                roleLabel.textContent = 'Role (A/C/CA):';
+                const roleInput = document.createElement('input');
+                roleInput.type = 'text';
+                roleInput.id = `role_${i}`;
+                roleInput.value = sw.role;
+
+                const shareLabel = document.createElement('label');
+                shareLabel.textContent = 'Share (%):';
+                const shareInput = document.createElement('input');
+                shareInput.type = 'number';
+                shareInput.id = `share_${i}`;
+                shareInput.value = sw.share;
+
+                writerDiv.appendChild(nameLabel);
+                writerDiv.appendChild(nameInput);
+                writerDiv.appendChild(roleLabel);
+                writerDiv.appendChild(roleInput);
+                writerDiv.appendChild(shareLabel);
+                writerDiv.appendChild(shareInput);
+
+                songwritersSection.appendChild(writerDiv);
+            });
+
+            // Replace Add Song to Catalogue button with Update Song button
+            const addButton = document.querySelector('button[onclick="addSongToCatalogue()"]');
+            addButton.textContent = 'Update Song';
+            addButton.setAttribute('onclick', `updateSong(${index})`);
+        }
+
+        function updateSong(index) {
+            const songTitle = document.getElementById('songTitle').value;
+            const recordLabel = document.getElementById('recordLabel').value;
             const singer = document.getElementById('singer').value;
             const releaseDate = document.getElementById('releaseDate').value;
             const distributor = document.getElementById('distributor').value;
             const isrc = document.getElementById('isrc').value;
 
-            const newSong = { title, singer, releaseDate, distributor, isrc };
-            catalogue.push(newSong);
-            localStorage.setItem('catalogue', JSON.stringify(catalogue));
-            renderCatalogue();
-        }
+            const songwriters = [];
+            document.querySelectorAll('#songwritersList > div').forEach(div => {
+                const name = div.querySelector('select').value;
+                const role = div.querySelector('input[type="text"]').value;
+                const share = parseFloat(div.querySelector('input[type="number"]').value) || 0;
+                songwriters.push({ name, role, share });
+            });
 
-        function deleteSong(index) {
-            catalogue.splice(index, 1);
-            localStorage.setItem('catalogue', JSON.stringify(catalogue));
-            renderCatalogue();
-        }
-
-        function exportToExcel(sheetName, data) {
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            XLSX.writeFile(wb, `${sheetName}.xlsx`);
-        }
-
-        function importFromExcel(event, sheetName) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(sheet);
-
-                if (sheetName === 'catalogue') {
-                    catalogue = json;
-                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                }
-                renderCatalogue();
-                alert('Data imported successfully!');
+            catalogue[index] = {
+                title: songTitle,
+                recordLabel,
+                singer,
+                releaseDate,
+                distributor,
+                isrc,
+                songwriters
             };
-            reader.readAsArrayBuffer(file);
+
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            renderCatalogue();
         }
 
-        // Initialize the page
-        renderCatalogue();
+        window.onload = renderCatalogue;
     </script>
 </body>
 </html>
