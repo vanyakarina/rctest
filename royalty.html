@@ -6,6 +6,7 @@
     <title>Royalty Calculation</title>
     <style>
         input, button { margin-bottom: 10px; padding: 10px; width: 100%; max-width: 400px; }
+        #royaltyResults { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -20,5 +21,61 @@
         <button type="button" onclick="calculateRoyalty()">Calculate</button>
     </form>
     <div id="royaltyResults"></div>
+
+    <script>
+        // Example songwriter data
+        const songwriters = [
+            { name: 'Nana', signed: true, share: 50, role: 'A' },
+            { name: 'Nini', signed: false, share: 50, role: 'C' }
+        ];
+
+        function calculateRoyalty() {
+            const totalRoyalties = parseFloat(document.getElementById('totalRoyalties').value);
+            const totalDigitalRoyalty = parseFloat(document.getElementById('totalDigitalRoyalty').value);
+            const totalSynchRoyalty = parseFloat(document.getElementById('totalSynchRoyalty').value);
+            const totalPerformanceRoyalty = parseFloat(document.getElementById('totalPerformanceRoyalty').value);
+            const totalMechanicalRoyalty = parseFloat(document.getElementById('totalMechanicalRoyalty').value);
+
+            if (isNaN(totalRoyalties) || isNaN(totalDigitalRoyalty) || isNaN(totalSynchRoyalty) || 
+                isNaN(totalPerformanceRoyalty) || isNaN(totalMechanicalRoyalty)) {
+                alert('Please fill in all fields with valid numbers.');
+                return;
+            }
+
+            // Filter signed songwriters and calculate the total share
+            const signedSongwriters = songwriters.filter(sw => sw.signed);
+            const totalSignedShare = signedSongwriters.reduce((acc, sw) => acc + sw.share, 0);
+
+            // Calculate royalty for each signed songwriter
+            const results = signedSongwriters.map(sw => {
+                const shareRatio = sw.share / totalSignedShare;
+                const royalty = {
+                    name: sw.name,
+                    total: totalRoyalties * shareRatio,
+                    digital: totalDigitalRoyalty * shareRatio,
+                    synch: totalSynchRoyalty * shareRatio,
+                    performance: totalPerformanceRoyalty * shareRatio,
+                    mechanical: totalMechanicalRoyalty * shareRatio
+                };
+                return royalty;
+            });
+
+            // Display the results
+            const resultDiv = document.getElementById('royaltyResults');
+            resultDiv.innerHTML = '<h2>Royalty Distribution:</h2>';
+            results.forEach(royalty => {
+                resultDiv.innerHTML += `
+                    <p><strong>${royalty.name}:</strong></p>
+                    <p>Total Royalty: $${royalty.total.toFixed(2)}</p>
+                    <p>Digital Royalty: $${royalty.digital.toFixed(2)}</p>
+                    <p>Synch Royalty: $${royalty.synch.toFixed(2)}</p>
+                    <p>Performance Royalty: $${royalty.performance.toFixed(2)}</p>
+                    <p>Mechanical Royalty: $${royalty.mechanical.toFixed(2)}</p>
+                    <hr>
+                `;
+            });
+        }
+    </script>
 </body>
 </html>
+
