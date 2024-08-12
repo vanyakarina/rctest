@@ -35,7 +35,6 @@
             text-align: left;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
     <nav>
@@ -75,36 +74,6 @@
                 <!-- Royalty data will be added here -->
             </tbody>
         </table>
-
-        <h2>Filter by Songwriter</h2>
-        <label for="songwriterFilter">Select Songwriter:</label>
-        <select id="songwriterFilter" onchange="filterBySongwriter()">
-            <option value="All">All</option>
-            <!-- Options will be filled by JavaScript -->
-        </select>
-        <br><br>
-
-        <h2>Total Royalties by Songwriter</h2>
-        <table id="filteredRoyaltyTable">
-            <thead>
-                <tr>
-                    <th>Songwriter</th>
-                    <th>Total Digital Royalty</th>
-                    <th>Total Synch Royalty</th>
-                    <th>Total Mechanical Royalty</th>
-                    <th>Total Performance Royalty</th>
-                    <th>Total Royalty</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Filtered royalty data will be added here -->
-            </tbody>
-        </table>
-
-        <br>
-        <button onclick="exportData()">Export Data</button>
-        <input type="file" id="importFile" />
-        <button onclick="importData()">Import Data</button>
     </div>
 
     <script>
@@ -132,8 +101,6 @@
 
             if (report) {
                 updateRoyaltyTable(report.royalties);
-                updateFilteredRoyaltyTable(report.royalties);
-                populateSongwriterFilter(report.royalties);
             } else {
                 alert('No data available for the selected period.');
             }
@@ -153,98 +120,6 @@
                 row.insertCell(6).textContent = data.performance.toFixed(2);
                 row.insertCell(7).textContent = data.total.toFixed(2);
             });
-        }
-
-        function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('songwriterFilter').value;
-            let filteredData = royaltyData;
-
-            if (filterSongwriter !== 'All') {
-                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
-            }
-
-            const songwriterTotals = filteredData.reduce((totals, data) => {
-                if (!totals[data.name]) {
-                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
-                }
-                totals[data.name].digital += data.digital;
-                totals[data.name].synch += data.synch;
-                totals[data.name].mechanical += data.mechanical;
-                totals[data.name].performance += data.performance;
-                totals[data.name].total += data.total;
-                return totals;
-            }, {});
-
-            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            for (const [name, totals] of Object.entries(songwriterTotals)) {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = totals.digital.toFixed(2);
-                row.insertCell(2).textContent = totals.synch.toFixed(2);
-                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
-                row.insertCell(4).textContent = totals.performance.toFixed(2);
-                row.insertCell(5).textContent = totals.total.toFixed(2);
-            }
-        }
-
-        function populateSongwriterFilter(royaltyData) {
-            const songwriterFilter = document.getElementById('songwriterFilter');
-            let songwriters = new Set(royaltyData.map(data => data.name));
-            songwriterFilter.innerHTML = '<option value="All">All</option>';
-            songwriters.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                songwriterFilter.appendChild(option);
-            });
-        }
-
-        function exportData() {
-            const selectedPeriod = document.getElementById('periodSelect').value;
-            const report = royaltyReports.find(report => report.period === selectedPeriod);
-            if (report) {
-                const ws = XLSX.utils.json_to_sheet(report.royalties);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Royalties");
-                XLSX.writeFile(wb, `${selectedPeriod}_royalty_data.xlsx`);
-            } else {
-                alert('No data available to export.');
-            }
-        }
-
-        function importData() {
-            const fileInput = document.getElementById('importFile');
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        const data = new Uint8Array(event.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const royalties = XLSX.utils.sheet_to_json(worksheet);
-                        const selectedPeriod = document.getElementById('periodSelect').value;
-                        royaltyReports = royaltyReports.filter(report => report.period !== selectedPeriod);
-                        royaltyReports.push({ period: selectedPeriod, royalties });
-                        localStorage.setItem('royaltyReports', JSON.stringify(royaltyReports));
-                        loadRoyaltyData();
-                    } catch (e) {
-                        alert('Failed to load data.');
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            } else {
-                alert('No file selected.');
-            }
-        }
-
-        function filterBySongwriter() {
-            const selectedPeriod = document.getElementById('periodSelect').value;
-            const report = royaltyReports.find(report => report.period === selectedPeriod);
-            if (report) {
-                updateFilteredRoyaltyTable(report.royalties);
-            }
         }
 
         document.getElementById('periodSelect').addEventListener('change', loadRoyaltyData);
