@@ -34,6 +34,9 @@
             padding: 8px;
             text-align: left;
         }
+        #exportImport {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -48,34 +51,17 @@
 
     <div class="content">
         <h1>Royalty Report</h1>
-        <form id="royaltyForm">
-            <h2>Input Royalties</h2>
-            <table id="inputTable">
-                <thead>
-                    <tr>
-                        <th>Song Title</th>
-                        <th>Digital Royalty</th>
-                        <th>Synch Royalty</th>
-                        <th>Mechanical Royalty</th>
-                        <th>Performance Royalty</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Input rows will be filled by JavaScript -->
-                </tbody>
-            </table>
-            <br>
-            <button type="button" onclick="calculateAllRoyalties()">Calculate All Royalties</button>
-            <br><br>
-        </form>
+        <div id="exportImport">
+            <button onclick="exportData()">Export</button>
+            <button onclick="importData()">Import</button>
+        </div>
 
-        <h2>Royalty Breakdown</h2>
         <table id="royaltyTable">
             <thead>
                 <tr>
+                    <th>Song Title</th>
                     <th>Songwriter</th>
                     <th>Status</th>
-                    <th>Song Title</th>
                     <th>Digital Royalty</th>
                     <th>Synch Royalty</th>
                     <th>Mechanical Royalty</th>
@@ -89,73 +75,42 @@
         </table>
 
         <h2>Filter by Songwriter</h2>
-        <label for="filterSongwriter">Select Songwriter:</label>
-        <select id="filterSongwriter">
-            <option value="">Select a songwriter</option>
-            <!-- Options will be filled by JavaScript -->
-        </select>
-        <button type="button" onclick="filterBySongwriter()">Filter</button>
-        <br><br>
-
-        <h2>Total Royalties by Songwriter</h2>
-        <table id="filteredRoyaltyTable">
-            <thead>
-                <tr>
-                    <th>Songwriter</th>
-                    <th>Total Digital Royalty</th>
-                    <th>Total Synch Royalty</th>
-                    <th>Total Mechanical Royalty</th>
-                    <th>Total Performance Royalty</th>
-                    <th>Total Royalty</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Filtered royalty data will be added here -->
-            </tbody>
-        </table>
-
-        <br>
-        <button onclick="exportData()">Export Data</button>
-        <input type="file" id="importFile" />
-        <button onclick="importData()">Import Data</button>
+        <label for="filterName">Songwriter Name:</label>
+        <input type="text" id="filterName" oninput="filterBySongwriter()">
+        
+        <h2>Total Royalty</h2>
+        <p id="totalRoyalty">Total Royalty: Rp0.00</p>
     </div>
 
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
-        let royalties = [];
 
-        function populateSongTitles() {
-            const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
+        function updateRoyaltyTable() {
+            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            let totalRoyalty = 0;
             catalogue.forEach(song => {
-                const row = inputTableBody.insertRow();
-                row.insertCell(0).textContent = song.title;
-                row.insertCell(1).innerHTML = `<input type="number" data-song="${song.title}" class="digitalRoyalty" placeholder="Digital Royalty">`;
-                row.insertCell(2).innerHTML = `<input type="number" data-song="${song.title}" class="synchRoyalty" placeholder="Synch Royalty">`;
-                row.insertCell(3).innerHTML = `<input type="number" data-song="${song.title}" class="mechanicalRoyalty" placeholder="Mechanical Royalty">`;
-                row.insertCell(4).innerHTML = `<input type="number" data-song="${song.title}" class="performanceRoyalty" placeholder="Performance Royalty">`;
-            });
-        }
+                const songTitle = song.title;
+                const digitalRoyalty = song.digitalRoyalty || 0;
+                const synchRoyalty = song.synchRoyalty || 0;
+                const mechanicalRoyalty = song.mechanicalRoyalty || 0;
+                const performanceRoyalty = song.performanceRoyalty || 0;
+                const totalSongRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
 
-        function calculateAllRoyalties() {
-            const inputRows = document.querySelectorAll('#inputTable tbody tr');
-            let totalRoyalties = [];
+                let signedSongwriters = song.songwriters.filter(sw => {
+                    const songwriter = songwriters.find(s => s.name === sw.name);
+                    return songwriter && songwriter.signed;
+                });
 
-            inputRows.forEach(row => {
-                const songTitle = row.cells[0].textContent;
-                const digitalRoyalty = parseFloat(row.querySelector('.digitalRoyalty').value) || 0;
-                const synchRoyalty = parseFloat(row.querySelector('.synchRoyalty').value) || 0;
-                const mechanicalRoyalty = parseFloat(row.querySelector('.mechanicalRoyalty').value) || 0;
-                const performanceRoyalty = parseFloat(row.querySelector('.performanceRoyalty').value) || 0;
+                let totalSignedShare = signedSongwriters.reduce((total, sw) => total + sw.share, 0);
 
-                const song = catalogue.find(s => s.title === songTitle);
-                let songData = song.songwriters.map(sw => {
+                song.songwriters.forEach(sw => {
                     const songwriter = songwriters.find(s => s.name === sw.name);
                     const isSigned = songwriter && songwriter.signed;
                     let royalties = {
                         name: sw.name,
                         status: isSigned ? 'Signed' : 'Unsigned',
-                        songTitle: songTitle,
                         digital: 0,
                         synch: 0,
                         mechanical: 0,
@@ -164,102 +119,53 @@
                     };
 
                     if (isSigned) {
-                        const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
-                        royalties.digital = (sw.share / totalShare) * digitalRoyalty;
-                        royalties.synch = (sw.share / totalShare) * synchRoyalty;
-                        royalties.mechanical = (sw.share / totalShare) * mechanicalRoyalty;
-                        royalties.performance = (sw.share / totalShare) * performanceRoyalty;
-                        royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
+                        royalties.digital = (sw.share / totalSignedShare) * digitalRoyalty;
+                        royalties.synch = (sw.share / totalSignedShare) * synchRoyalty;
+                        royalties.mechanical = (sw.share / totalSignedShare) * mechanicalRoyalty;
+                        royalties.performance = (sw.share / totalSignedShare) * performanceRoyalty;
                     }
 
-                    return royalties;
-                });
+                    royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
+                    totalRoyalty += royalties.total;
 
-                songData.forEach(data => {
-                    totalRoyalties.push(data);
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = songTitle;
+                    row.insertCell(1).textContent = royalties.name;
+                    row.insertCell(2).textContent = royalties.status;
+                    row.insertCell(3).textContent = royalties.digital.toFixed(2);
+                    row.insertCell(4).textContent = royalties.synch.toFixed(2);
+                    row.insertCell(5).textContent = royalties.mechanical.toFixed(2);
+                    row.insertCell(6).textContent = royalties.performance.toFixed(2);
+                    row.insertCell(7).textContent = royalties.total.toFixed(2);
                 });
             });
 
-            updateRoyaltyTable(totalRoyalties);
-            updateFilteredRoyaltyTable(totalRoyalties);
+            document.getElementById('totalRoyalty').textContent = `Total Royalty: Rp${totalRoyalty.toFixed(2)}`;
         }
 
-        function updateRoyaltyTable(royaltyData) {
-            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            royaltyData.forEach(data => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = data.name;
-                row.insertCell(1).textContent = data.status;
-                row.insertCell(2).textContent = data.songTitle;
-                row.insertCell(3).textContent = data.digital.toFixed(2);
-                row.insertCell(4).textContent = data.synch.toFixed(2);
-                row.insertCell(5).textContent = data.mechanical.toFixed(2);
-                row.insertCell(6).textContent = data.performance.toFixed(2);
-                row.insertCell(7).textContent = data.total.toFixed(2);
-            });
-        }
-
-        function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('filterSongwriter').value;
-            let filteredData = royaltyData;
-
-            if (filterSongwriter) {
-                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
-            }
-
-            const songwriterTotals = filteredData.reduce((totals, data) => {
-                if (!totals[data.name]) {
-                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
+        function filterBySongwriter() {
+            const filterName = document.getElementById('filterName').value.toLowerCase();
+            const rows = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            Array.from(rows).forEach(row => {
+                const songwriterName = row.cells[1].textContent.toLowerCase();
+                if (songwriterName.includes(filterName)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
-                totals[data.name].digital += data.digital;
-                totals[data.name].synch += data.synch;
-                totals[data.name].mechanical += data.mechanical;
-                totals[data.name].performance += data.performance;
-                totals[data.name].total += data.total;
-                return totals;
-            }, {});
-
-            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            for (let [name, totals] of Object.entries(songwriterTotals)) {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = totals.digital.toFixed(2);
-                row.insertCell(2).textContent = totals.synch.toFixed(2);
-                row.insertCell(3).textContent = totals.mechanical.toFixed(2);
-                row.insertCell(4).textContent = totals.performance.toFixed(2);
-                row.insertCell(5).textContent = totals.total.toFixed(2);
-            }
-        }
-
-        function populateSongwriters() {
-            const filterSelect = document.getElementById('filterSongwriter');
-            songwriters.forEach(songwriter => {
-                const option = document.createElement('option');
-                option.value = songwriter.name;
-                option.textContent = songwriter.name;
-                filterSelect.appendChild(option);
             });
         }
 
         function exportData() {
             // Implement export functionality here
-            alert('Export functionality is not yet implemented.');
         }
 
         function importData() {
             // Implement import functionality here
-            alert('Import functionality is not yet implemented.');
-        }
-
-        function filterBySongwriter() {
-            calculateAllRoyalties();  // Recalculate royalties with filtering applied
         }
 
         // Initialize the page
-        populateSongTitles();
-        populateSongwriters();
+        updateRoyaltyTable();
     </script>
 </body>
 </html>
