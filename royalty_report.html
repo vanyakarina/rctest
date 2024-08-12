@@ -4,36 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Royalty Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        nav {
-            background-color: #333;
-            padding: 10px;
-            color: white;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            padding: 14px 20px;
-            display: inline-block;
-        }
-        nav a:hover {
-            background-color: #575757;
-        }
-        .content {
-            margin: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
+        nav { /* your styles for navigation */ }
+        .content { /* your styles for content */ }
+        table { /* your styles for table */ }
     </style>
 </head>
 <body>
@@ -47,76 +22,41 @@
 
     <div class="content">
         <h1>Royalty Report</h1>
-        <form id="reportForm">
-            <label for="reportPeriod">Royalty Period:</label>
-            <select id="reportPeriod" required>
-                <option value="">Select a period</option>
-                <!-- Generating periods from 2020 to 2030 -->
-                <option value="Jan-Jun 20">Jan-Jun 20</option>
-                <option value="Jul-Dec 20">Jul-Dec 20</option>
-                <option value="Jan-Jun 21">Jan-Jun 21</option>
-                <option value="Jul-Dec 21">Jul-Dec 21</option>
-                <option value="Jan-Jun 22">Jan-Jun 22</option>
-                <option value="Jul-Dec 22">Jul-Dec 22</option>
-                <option value="Jan-Jun 23">Jan-Jun 23</option>
-                <option value="Jul-Dec 23">Jul-Dec 23</option>
-                <option value="Jan-Jun 24">Jan-Jun 24</option>
-                <option value="Jul-Dec 24">Jul-Dec 24</option>
-                <option value="Jan-Jun 25">Jan-Jun 25</option>
-                <option value="Jul-Dec 25">Jul-Dec 25</option>
-                <option value="Jan-Jun 26">Jan-Jun 26</option>
-                <option value="Jul-Dec 26">Jul-Dec 26</option>
-                <option value="Jan-Jun 27">Jan-Jun 27</option>
-                <option value="Jul-Dec 27">Jul-Dec 27</option>
-                <option value="Jan-Jun 28">Jan-Jun 28</option>
-                <option value="Jul-Dec 28">Jul-Dec 28</option>
-                <option value="Jan-Jun 29">Jan-Jun 29</option>
-                <option value="Jul-Dec 29">Jul-Dec 29</option>
-                <option value="Jan-Jun 30">Jan-Jun 30</option>
-                <option value="Jul-Dec 30">Jul-Dec 30</option>
+        <form id="royaltyReportForm">
+            <label for="period">Royalty Period:</label>
+            <select id="period">
+                <!-- Populate options dynamically -->
             </select>
-            <br><br>
-            <label for="songs">Select Songs:</label>
-            <select id="songs" multiple required>
-                <!-- Options will be filled by JavaScript -->
-            </select>
-            <br><br>
-            <button type="button" onclick="populateRoyaltiesForm()">Populate Royalties Form</button>
+            <h2>Input Royalties</h2>
+            <table id="royaltyTable">
+                <thead>
+                    <tr>
+                        <th>Song Title</th>
+                        <th>Total Digital Royalty</th>
+                        <th>Total Synch Royalty</th>
+                        <th>Total Mechanical Royalty</th>
+                        <th>Total Performance Royalty</th>
+                        <th>Total Royalty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Songs will be added here -->
+                </tbody>
+            </table>
+            <button type="button" onclick="calculateRoyalties()">Calculate Royalties</button>
         </form>
 
-        <div id="royaltiesInput">
-            <h2>Input Royalties</h2>
-            <form id="royaltiesForm">
-                <table id="royaltiesTable">
-                    <thead>
-                        <tr>
-                            <th>Song Title</th>
-                            <th>Digital Royalty</th>
-                            <th>Synch Royalty</th>
-                            <th>Mechanical Royalty</th>
-                            <th>Performance Royalty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Royalties input rows will be added here -->
-                    </tbody>
-                </table>
-                <br>
-                <button type="button" onclick="generateReport()">Generate Report</button>
-            </form>
-        </div>
-
-        <h2>Royalty Report Breakdown</h2>
-        <table id="reportTable">
+        <h2>Royalty Report</h2>
+        <table id="royaltyReportTable">
             <thead>
                 <tr>
+                    <th>Song Title</th>
                     <th>Songwriter</th>
-                    <th>Status</th>
-                    <th>Total Royalty</th>
+                    <th>Royalty Amount</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Report data will be added here -->
+                <!-- Royalty calculations will be added here -->
             </tbody>
         </table>
     </div>
@@ -124,83 +64,131 @@
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+        let royalties = {}; // Will hold the calculated royalties
 
-        function populateSongs() {
-            const songsSelect = document.getElementById('songs');
-            catalogue.forEach(song => {
+        function populatePeriodOptions() {
+            const periods = [
+                'Jan-Jun 2020', 'Jul-Dec 2020', 'Jan-Jun 2021', 'Jul-Dec 2021',
+                'Jan-Jun 2022', 'Jul-Dec 2022', 'Jan-Jun 2023', 'Jul-Dec 2023',
+                'Jan-Jun 2024', 'Jul-Dec 2024', 'Jan-Jun 2025', 'Jul-Dec 2025',
+                'Jan-Jun 2026', 'Jul-Dec 2026', 'Jan-Jun 2027', 'Jul-Dec 2027',
+                'Jan-Jun 2028', 'Jul-Dec 2028', 'Jan-Jun 2029', 'Jul-Dec 2029',
+                'Jan-Jun 2030', 'Jul-Dec 2030'
+            ];
+            const periodSelect = document.getElementById('period');
+            periods.forEach(period => {
                 const option = document.createElement('option');
-                option.value = song.title;
-                option.textContent = song.title;
-                songsSelect.appendChild(option);
+                option.value = period;
+                option.textContent = period;
+                periodSelect.appendChild(option);
             });
         }
 
-        function populateRoyaltiesForm() {
-            const selectedSongs = Array.from(document.getElementById('songs').selectedOptions).map(option => option.value);
-            const royaltiesTableBody = document.getElementById('royaltiesTable').getElementsByTagName('tbody')[0];
-            royaltiesTableBody.innerHTML = '';
+        function renderCatalogueForReport() {
+            const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
 
-            selectedSongs.forEach(title => {
-                const song = catalogue.find(s => s.title === title);
-                if (song) {
-                    const row = royaltiesTableBody.insertRow();
-                    row.insertCell(0).textContent = title;
-                    row.insertCell(1).innerHTML = `<input type="number" step="0.01" id="digital_${title}" placeholder="0.00" required>`;
-                    row.insertCell(2).innerHTML = `<input type="number" step="0.01" id="synch_${title}" placeholder="0.00" required>`;
-                    row.insertCell(3).innerHTML = `<input type="number" step="0.01" id="mechanical_${title}" placeholder="0.00" required>`;
-                    row.insertCell(4).innerHTML = `<input type="number" step="0.01" id="performance_${title}" placeholder="0.00" required>`;
-                }
+            catalogue.forEach(song => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = song.title;
+
+                const digitalRoyaltyInput = document.createElement('input');
+                digitalRoyaltyInput.type = 'number';
+                digitalRoyaltyInput.id = `digital_${song.title}`;
+                digitalRoyaltyInput.oninput = updateTotalRoyalty;
+                row.insertCell(1).appendChild(digitalRoyaltyInput);
+
+                const synchRoyaltyInput = document.createElement('input');
+                synchRoyaltyInput.type = 'number';
+                synchRoyaltyInput.id = `synch_${song.title}`;
+                synchRoyaltyInput.oninput = updateTotalRoyalty;
+                row.insertCell(2).appendChild(synchRoyaltyInput);
+
+                const mechanicalRoyaltyInput = document.createElement('input');
+                mechanicalRoyaltyInput.type = 'number';
+                mechanicalRoyaltyInput.id = `mechanical_${song.title}`;
+                mechanicalRoyaltyInput.oninput = updateTotalRoyalty;
+                row.insertCell(3).appendChild(mechanicalRoyaltyInput);
+
+                const performanceRoyaltyInput = document.createElement('input');
+                performanceRoyaltyInput.type = 'number';
+                performanceRoyaltyInput.id = `performance_${song.title}`;
+                performanceRoyaltyInput.oninput = updateTotalRoyalty;
+                row.insertCell(4).appendChild(performanceRoyaltyInput);
+
+                const totalRoyaltyInput = document.createElement('input');
+                totalRoyaltyInput.type = 'number';
+                totalRoyaltyInput.id = `total_${song.title}`;
+                totalRoyaltyInput.readOnly = true;
+                row.insertCell(5).appendChild(totalRoyaltyInput);
             });
         }
 
-        function generateReport() {
-            const period = document.getElementById('reportPeriod').value;
+        function updateTotalRoyalty() {
+            catalogue.forEach(song => {
+                const digitalRoyalty = parseFloat(document.getElementById(`digital_${song.title}`).value) || 0;
+                const synchRoyalty = parseFloat(document.getElementById(`synch_${song.title}`).value) || 0;
+                const mechanicalRoyalty = parseFloat(document.getElementById(`mechanical_${song.title}`).value) || 0;
+                const performanceRoyalty = parseFloat(document.getElementById(`performance_${song.title}`).value) || 0;
+
+                const totalRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
+                document.getElementById(`total_${song.title}`).value = totalRoyalty.toFixed(2);
+            });
+        }
+
+        function calculateRoyalties() {
+            const period = document.getElementById('period').value;
             if (!period) {
                 alert('Please select a period.');
                 return;
             }
 
-            let songwriterTotalRoyalties = {};
+            const reportTableBody = document.getElementById('royaltyReportTable').getElementsByTagName('tbody')[0];
+            reportTableBody.innerHTML = '';
 
-            catalogue.forEach(song => {
-                const title = song.title;
-                const digitalRoyalty = parseFloat(document.getElementById(`digital_${title}`)?.value || 0);
-                const synchRoyalty = parseFloat(document.getElementById(`synch_${title}`)?.value || 0);
-                const mechanicalRoyalty = parseFloat(document.getElementById(`mechanical_${title}`)?.value || 0);
-                const performanceRoyalty = parseFloat(document.getElementById(`performance_${title}`)?.value || 0);
+            songwriters.forEach(sw => {
+                let totalRoyaltyForSongwriter = 0;
 
-                song.songwriters.forEach(sw => {
-                    const songwriter = songwriters.find(s => s.name === sw.name);
-                    const share = sw.share;
-                    const isSigned = songwriter && songwriter.signed;
+                catalogue.forEach(song => {
+                    const digitalRoyalty = parseFloat(document.getElementById(`digital_${song.title}`).value) || 0;
+                    const synchRoyalty = parseFloat(document.getElementById(`synch_${song.title}`).value) || 0;
+                    const mechanicalRoyalty = parseFloat(document.getElementById(`mechanical_${song.title}`).value) || 0;
+                    const performanceRoyalty = parseFloat(document.getElementById(`performance_${song.title}`).value) || 0;
 
-                    if (isSigned) {
-                        // Calculate royalties based on song's shares
-                        const totalSongRoyalty = (share / 100) * (digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty);
-                        if (!songwriterTotalRoyalties[sw.name]) {
-                            songwriterTotalRoyalties[sw.name] = { total: 0, status: isSigned ? 'Signed' : 'Unsigned' };
+                    const totalRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
+                    const totalShare = songwriters.reduce((sum, songwriter) => {
+                        if (songwriter.isSigned) {
+                            return sum + (songwriter.shares[song.title] || 0);
                         }
-                        songwriterTotalRoyalties[sw.name].total += totalSongRoyalty;
+                        return sum;
+                    }, 0);
+
+                    if (totalShare > 0) {
+                        const royalty = totalRoyalty * (sw.shares[song.title] || 0) / totalShare;
+                        totalRoyaltyForSongwriter += royalty;
+
+                        const row = reportTableBody.insertRow();
+                        row.insertCell(0).textContent = song.title;
+                        row.insertCell(1).textContent = sw.name;
+                        row.insertCell(2).textContent = royalty.toFixed(2);
                     }
                 });
+
+                // Optional: Show total royalty for the songwriter
+                if (totalRoyaltyForSongwriter > 0) {
+                    const row = reportTableBody.insertRow();
+                    row.insertCell(0).textContent = 'Total';
+                    row.insertCell(1).textContent = sw.name;
+                    row.insertCell(2).textContent = totalRoyaltyForSongwriter.toFixed(2);
+                }
             });
 
-            updateReportTable(songwriterTotalRoyalties);
-        }
-
-        function updateReportTable(royaltyData) {
-            const tableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            for (const [name, data] of Object.entries(royaltyData)) {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = name;
-                row.insertCell(1).textContent = data.status;
-                row.insertCell(2).textContent = data.total.toFixed(2);
-            }
+            alert('Royalty calculation completed!');
         }
 
         // Initialize the page
-        populateSongs();
+        populatePeriodOptions();
+        renderCatalogueForReport();
     </script>
 </body>
 </html>
