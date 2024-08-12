@@ -69,6 +69,7 @@
                             <th>Name</th>
                             <th>Role</th>
                             <th>Share (%)</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -102,29 +103,39 @@
 
     <script>
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
-        let catalogues = JSON.parse(localStorage.getItem('catalogues')) || [];
-
-        function addSongwriterToList() {
-            const songwriterSelect = document.getElementById('songwriters');
-            const selectedOption = songwriterSelect.options[songwriterSelect.selectedIndex];
-            const name = selectedOption.text;
-            const role = prompt("Enter the role (A/C/CA):");
-            const share = prompt("Enter the share (%):");
-
-            if (name && role && share) {
-                const songwriterRow = document.createElement('tr');
-                songwriterRow.innerHTML = `
-                    <td>${name}</td>
-                    <td>${role}</td>
-                    <td>${share}</td>
-                    <td><button onclick="removeSongwriter(this)">Remove</button></td>
-                `;
-                document.getElementById('songwritersTable').querySelector('tbody').appendChild(songwriterRow);
-            }
+        let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+        const songwriterSelect = document.getElementById('songwriters');
+        
+        function loadSongwriters() {
+            songwriterSelect.innerHTML = '';
+            songwriters.forEach((sw, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = sw.name;
+                songwriterSelect.appendChild(option);
+            });
         }
 
-        function removeSongwriter(button) {
-            button.parentElement.parentElement.remove();
+        function addSongwriterToList() {
+            const index = songwriterSelect.value;
+            const role = document.getElementById('role').value;
+            const share = parseFloat(document.getElementById('share').value);
+
+            if (index !== '' && !isNaN(share)) {
+                const songwriter = songwriters[index];
+                const status = songwriter ? 'Signed' : 'Unsigned';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${songwriter.name || 'New Songwriter'}</td>
+                    <td>${role}</td>
+                    <td>${share}</td>
+                    <td>${status}</td>
+                    <td><button onclick="removeSongwriterFromList(this)">Remove</button></td>
+                `;
+                document.getElementById('songwritersTable').querySelector('tbody').appendChild(row);
+            } else {
+                alert('Please select a songwriter and enter a valid share percentage.');
+            }
         }
 
         function addCatalogue() {
@@ -134,42 +145,38 @@
             const releaseDate = document.getElementById('releaseDate').value;
             const distributor = document.getElementById('distributor').value;
             const isrc = document.getElementById('isrc').value;
-
-            const songwritersTable = document.getElementById('songwritersTable').getElementsByTagName('tbody')[0];
-            const songwritersList = Array.from(songwritersTable.getElementsByTagName('tr')).map(row => {
-                const cells = row.getElementsByTagName('td');
-                return {
-                    name: cells[0].textContent,
-                    role: cells[1].textContent,
-                    share: cells[2].textContent
-                };
-            });
-
-            const catalogue = { title, recordLabel, singer, releaseDate, distributor, isrc, songwriters: songwritersList };
-
-            catalogues.push(catalogue);
-            localStorage.setItem('catalogues', JSON.stringify(catalogues));
-            renderCatalogues();
+            
+            if (title && recordLabel && singer && releaseDate && distributor) {
+                const catalogueEntry = { title, recordLabel, singer, releaseDate, distributor, isrc, songwriters: [] };
+                catalogue.push(catalogueEntry);
+                localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                renderCatalogue();
+                document.getElementById('catalogueForm').reset();
+                document.getElementById('songwritersTable').querySelector('tbody').innerHTML = '';
+            } else {
+                alert('Please fill in all required fields.');
+            }
         }
 
-        function renderCatalogues() {
-            const catalogueTable = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
-            catalogueTable.innerHTML = '';
+        function renderCatalogue() {
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
 
-            catalogues.forEach((catalogue, index) => {
-                const row = catalogueTable.insertRow();
-                row.insertCell(0).textContent = catalogue.title;
-                row.insertCell(1).textContent = catalogue.recordLabel;
-                row.insertCell(2).textContent = catalogue.singer;
-                row.insertCell(3).textContent = catalogue.releaseDate;
-                row.insertCell(4).textContent = catalogue.distributor;
-                row.insertCell(5).textContent = catalogue.isrc;
-
-                const songwriters = catalogue.songwriters.map(sw => `${sw.name} (${sw.role}, ${sw.share}%)`).join(', ');
-                row.insertCell(6).textContent = songwriters;
-
+            catalogue.forEach((entry, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = entry.title;
+                row.insertCell(1).textContent = entry.recordLabel;
+                row.insertCell(2).textContent = entry.singer;
+                row.insertCell(3).textContent = entry.releaseDate;
+                row.insertCell(4).textContent = entry.distributor;
+                row.insertCell(5).textContent = entry.isrc || 'N/A';
+                row.insertCell(6).textContent = entry.songwriters.map(sw => sw.name).join(', ');
                 row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${index})">Edit</button> <button onclick="deleteCatalogue(${index})">Delete</button>`;
             });
+        }
+
+        function removeSongwriterFromList(button) {
+            button.parentElement.parentElement.remove();
         }
 
         function editCatalogue(index) {
@@ -177,25 +184,15 @@
         }
 
         function deleteCatalogue(index) {
-            catalogues.splice(index, 1);
-            localStorage.setItem('catalogues', JSON.stringify(catalogues));
-            renderCatalogues();
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            renderCatalogue();
         }
 
         window.onload = function() {
-            renderCatalogues();
             loadSongwriters();
+            renderCatalogue();
         };
-
-        function loadSongwriters() {
-            const songwriterSelect = document.getElementById('songwriters');
-            songwriters.forEach(sw => {
-                const option = document.createElement('option');
-                option.value = sw.name;
-                option.text = sw.name;
-                songwriterSelect.add(option);
-            });
-        }
     </script>
 </body>
 </html>
