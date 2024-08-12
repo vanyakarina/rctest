@@ -78,4 +78,51 @@
 
         function addSong() {
             const title = document.getElementById('title').value;
-            const
+            const singer = document.getElementById('singer').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const distributor = document.getElementById('distributor').value;
+            const isrc = document.getElementById('isrc').value;
+
+            const newSong = { title, singer, releaseDate, distributor, isrc };
+            catalogue.push(newSong);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            renderCatalogue();
+        }
+
+        function deleteSong(index) {
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            renderCatalogue();
+        }
+
+        function exportToExcel(sheetName, data) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, `${sheetName}.xlsx`);
+        }
+
+        function importFromExcel(event, sheetName) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+
+                if (sheetName === 'catalogue') {
+                    catalogue = json;
+                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                }
+                renderCatalogue();
+                alert('Data imported successfully!');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Initialize the page
+        renderCatalogue();
+    </script>
+</body>
+</html>
