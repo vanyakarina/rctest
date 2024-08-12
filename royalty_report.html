@@ -235,56 +235,75 @@
         }
 
         function exportRoyaltyBreakdown() {
-            exportTableToExcel('royaltyTable', 'Royalty_Breakdown');
+            const ws_data = [['Song Title', 'Songwriter', 'Status', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty', 'Total Royalty']];
+            royalties.forEach(data => {
+                ws_data.push([data.songTitle, data.name, data.status, data.digital, data.synch, data.mechanical, data.performance, data.total]);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Royalty Breakdown");
+            XLSX.writeFile(wb, "Royalty_Breakdown.xlsx");
         }
 
         function exportTotalRoyalties() {
-            exportTableToExcel('filteredRoyaltyTable', 'Total_Royalties');
-        }
-
-        function exportTableToExcel(tableId, filename) {
-            let wb = XLSX.utils.book_new();
-            let ws = XLSX.utils.table_to_sheet(document.getElementById(tableId));
-            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-            XLSX.writeFile(wb, `${filename}.xlsx`);
+            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
+            const ws_data = [['Songwriter', 'Total Digital Royalty', 'Total Synch Royalty', 'Total Mechanical Royalty', 'Total Performance Royalty', 'Total Royalty']];
+            for (let i = 0; i < tableBody.rows.length; i++) {
+                const row = tableBody.rows[i];
+                ws_data.push([
+                    row.cells[0].textContent,
+                    parseFloat(row.cells[1].textContent),
+                    parseFloat(row.cells[2].textContent),
+                    parseFloat(row.cells[3].textContent),
+                    parseFloat(row.cells[4].textContent),
+                    parseFloat(row.cells[5].textContent)
+                ]);
+            }
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Total Royalties");
+            XLSX.writeFile(wb, "Total_Royalties.xlsx");
         }
 
         function importData() {
-            const input = document.getElementById('importFile');
-            const file = input.files[0];
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
             const reader = new FileReader();
-
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {type: 'array'});
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const importedData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
-                importedData.slice(1).forEach((row, index) => {
-                    const inputRow = inputTableBody.rows[index];
-                    if (inputRow) {
-                        inputRow.cells[1].querySelector('input').value = row[1] || 0;
-                        inputRow.cells[2].querySelector('input').value = row[2] || 0;
-                        inputRow.cells[3].querySelector('input').value = row[3] || 0;
-                        inputRow.cells[4].querySelector('input').value = row[4] || 0;
-                    }
-                });
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                populateImportedData(jsonData);
             };
-
             reader.readAsArrayBuffer(file);
         }
 
-        function downloadTemplate() {
-            let wb = XLSX.utils.book_new();
-            let ws = XLSX.utils.aoa_to_sheet([
-                ['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty']
-            ]);
-            XLSX.utils.book_append_sheet(wb, ws, "Template");
-            XLSX.writeFile(wb, 'Royalty_Template.xlsx');
+        function populateImportedData(data) {
+            const inputRows = document.querySelectorAll('#inputTable tbody tr');
+            data.forEach((rowData, index) => {
+                if (index > 0) { // Skip header row
+                    const row = inputRows[index - 1];
+                    row.querySelector('.digitalRoyalty').value = rowData[1] || 0;
+                    row.querySelector('.synchRoyalty').value = rowData[2] || 0;
+                    row.querySelector('.mechanicalRoyalty').value = rowData[3] || 0;
+                    row.querySelector('.performanceRoyalty').value = rowData[4] || 0;
+                }
+            });
         }
 
-        window.onload = populateSongTitles;
+        function downloadTemplate() {
+            const ws_data = [['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty']];
+            catalogue.forEach(song => {
+                ws_data.push([song.title, '', '', '', '']);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, "Royalty_Input_Template.xlsx");
+        }
+
+        populateSongTitles(); // Populate song titles on page load
     </script>
 </body>
 </html>
