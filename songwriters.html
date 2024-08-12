@@ -5,73 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Songwriters Input</title>
     <style>
-        nav { /* your styles for navigation */ }
-        .content { /* your styles for content */ }
-        .input-form { display: flex; flex-direction: column; }
-        .input-form div { display: flex; align-items: center; margin-bottom: 10px; }
-        .input-form label { margin-right: 10px; width: 150px; }
-        .input-form input { flex: 1; }
-        .songwriters-list { margin-top: 20px; }
-        .songwriters-list table { width: 100%; border-collapse: collapse; }
-        .songwriters-list th, .songwriters-list td { border: 1px solid #ddd; padding: 8px; }
-        .songwriters-list th { background-color: #f2f2f2; }
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
     <nav>
         <a href="index.html">Home</a>
         <a href="songwriters.html">Songwriters Input</a>
-        <a href="catalogue.html">Catalogue Input</a>
-        <a href="royalty.html">Royalty Calculation</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
         <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
-    <div class="content">
+    <div class="container">
         <h1>Songwriters Input</h1>
-        <form id="songwritersForm" class="input-form">
-            <div>
-                <label for="name">Name:</label>
-                <input type="text" id="name" required>
-            </div>
-            <div>
-                <label for="bankName">Bank Name:</label>
-                <input type="text" id="bankName" required>
-            </div>
-            <div>
-                <label for="bankAccount">Bank Account:</label>
-                <input type="text" id="bankAccount" required>
-            </div>
-            <div>
-                <label for="ktpNumber">KTP Number:</label>
-                <input type="text" id="ktpNumber" required>
-            </div>
-            <div>
-                <label for="ipNames">IP Names:</label>
-                <input type="text" id="ipNames">
-            </div>
-            <div>
-                <label for="ipBases">IP Bases:</label>
-                <input type="text" id="ipBases">
-            </div>
+        <form id="songwriterForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" placeholder="Songwriter Name" required>
+            <label for="bankName">Bank Name:</label>
+            <input type="text" id="bankName" placeholder="Bank Name" required>
+            <label for="bankAccount">Bank Account:</label>
+            <input type="text" id="bankAccount" placeholder="Bank Account" required>
+            <label for="ktpNumber">KTP Number:</label>
+            <input type="text" id="ktpNumber" placeholder="KTP Number" required>
+            <label for="ipName">IP Name:</label>
+            <input type="text" id="ipName" placeholder="IP Name (optional)">
+            <label for="ipBase">IP Base:</label>
+            <input type="text" id="ipBase" placeholder="IP Base (optional)">
             <button type="button" onclick="addSongwriter()">Add Songwriter</button>
         </form>
 
-        <h2>Songwriters List</h2>
-        <table id="songwritersTable">
+        <h2>Songwriter List</h2>
+        <table id="songwriterTable">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Bank Name</th>
                     <th>Bank Account</th>
                     <th>KTP Number</th>
-                    <th>IP Names</th>
-                    <th>IP Bases</th>
+                    <th>IP Name</th>
+                    <th>IP Base</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Songwriter entries will be shown here -->
+                <!-- Songwriter data will be added here -->
             </tbody>
         </table>
     </div>
@@ -84,50 +127,48 @@
             const bankName = document.getElementById('bankName').value;
             const bankAccount = document.getElementById('bankAccount').value;
             const ktpNumber = document.getElementById('ktpNumber').value;
-            const ipNames = document.getElementById('ipNames').value;
-            const ipBases = document.getElementById('ipBases').value;
+            const ipName = document.getElementById('ipName').value;
+            const ipBase = document.getElementById('ipBase').value;
 
             if (name && bankName && bankAccount && ktpNumber) {
-                const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, status: 'Signed' };
+                const songwriter = { name, bankName, bankAccount, ktpNumber, ipName, ipBase, signed: true };
                 songwriters.push(songwriter);
                 localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                renderSongwriters();
-                document.getElementById('songwritersForm').reset();
+                updateSongwriterTable();
+                document.getElementById('songwriterForm').reset();
             } else {
                 alert('Please fill in all required fields.');
             }
         }
 
-        function renderSongwriters() {
-            const tableBody = document.getElementById('songwritersTable').getElementsByTagName('tbody')[0];
+        function updateSongwriterTable() {
+            const tableBody = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-
             songwriters.forEach((sw, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = sw.name;
                 row.insertCell(1).textContent = sw.bankName;
                 row.insertCell(2).textContent = sw.bankAccount;
                 row.insertCell(3).textContent = sw.ktpNumber;
-                row.insertCell(4).textContent = sw.ipNames || 'N/A';
-                row.insertCell(5).textContent = sw.ipBases || 'N/A';
-                row.insertCell(6).textContent = sw.status;
-                row.insertCell(7).innerHTML = `<button onclick="editSongwriter(${index})">Edit</button> <button onclick="deleteSongwriter(${index})">Delete</button>`;
+                row.insertCell(4).textContent = sw.ipName || 'N/A';
+                row.insertCell(5).textContent = sw.ipBase || 'N/A';
+                row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
+                row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
         }
 
         function editSongwriter(index) {
-            // Implement edit functionality
+            // Handle edit functionality here
         }
 
         function deleteSongwriter(index) {
             songwriters.splice(index, 1);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
-            renderSongwriters();
+            updateSongwriterTable();
         }
 
-        window.onload = function() {
-            renderSongwriters();
-        };
+        // Initialize the page
+        updateSongwriterTable();
     </script>
 </body>
 </html>
