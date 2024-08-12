@@ -49,6 +49,16 @@
 
     <div class="content">
         <h1>Royalty Report Data</h1>
+        <h2>Select Period</h2>
+        <form id="reportForm">
+            <label for="period">Period:</label>
+            <select id="period">
+                <!-- Period options populated by JavaScript -->
+            </select>
+            <button type="button" onclick="generateReport()">Generate Report</button>
+        </form>
+
+        <h2>Royalty Report</h2>
         <table id="reportTable">
             <thead>
                 <tr>
@@ -63,32 +73,56 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Submitted data will be filled by JavaScript -->
+                <!-- Report data will be added here -->
             </tbody>
         </table>
     </div>
 
     <script>
-        function loadRoyaltyReportData() {
-            const reportTableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
-            const data = JSON.parse(localStorage.getItem('royalties')) || [];
-
-            data.forEach(record => {
-                const row = reportTableBody.insertRow();
-                row.insertCell(0).textContent = record.songTitle;
-                row.insertCell(1).textContent = record.name;
-                row.insertCell(2).textContent = record.status;
-                row.insertCell(3).textContent = record.digital.toFixed(2);
-                row.insertCell(4).textContent = record.synch.toFixed(2);
-                row.insertCell(5).textContent = record.mechanical.toFixed(2);
-                row.insertCell(6).textContent = record.performance.toFixed(2);
-                row.insertCell(7).textContent = record.total.toFixed(2);
+        function populatePeriodOptions() {
+            const periods = [];
+            for (let year = 2019; year <= 2040; year++) {
+                periods.push(`Jan-Jun ${year}`);
+                periods.push(`Jul-Dec ${year}`);
+            }
+            const periodSelect = document.getElementById('period');
+            periods.forEach(period => {
+                const option = document.createElement('option');
+                option.value = period;
+                option.textContent = period;
+                periodSelect.appendChild(option);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadRoyaltyReportData();
-        });
+        function generateReport() {
+            const period = document.getElementById('period').value;
+            if (period) {
+                // Load data from localStorage or server as needed
+                const royalties = JSON.parse(localStorage.getItem('royalties')) || [];
+
+                const reportData = royalties.filter(report => report.period === period);
+                const tableBody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = '';
+
+                reportData.forEach(data => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = data.songTitle;
+                    row.insertCell(1).textContent = data.songwriter;
+                    row.insertCell(2).textContent = data.status;
+                    row.insertCell(3).textContent = data.digital.toFixed(2);
+                    row.insertCell(4).textContent = data.synch.toFixed(2);
+                    row.insertCell(5).textContent = data.mechanical.toFixed(2);
+                    row.insertCell(6).textContent = data.performance.toFixed(2);
+                    row.insertCell(7).textContent = data.total.toFixed(2);
+                });
+            } else {
+                alert('Please select a period.');
+            }
+        }
+
+        window.onload = function() {
+            populatePeriodOptions();
+        };
     </script>
 </body>
 </html>
