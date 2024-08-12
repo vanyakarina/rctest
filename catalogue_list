@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group input[type="text"] {
+            width: calc(100% - 22px); /* Adjust width for padding and border */
+        }
+        .form-group button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catalogue List</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Song Title</th>
+                    <th>Record Label</th>
+                    <th>Release Date</th>
+                    <th>Distributor</th>
+                    <th>ISRC</th>
+                    <th>Songwriters</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="catalogueTableBody">
+                <!-- Rows will be dynamically filled with data -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        // Example script to handle dynamic data
+        function loadCatalogueData() {
+            // Load and populate catalogue data here
+        }
+
+        document.addEventListener('DOMContentLoaded', loadCatalogueData);
+    </script>
+</body>
+</html>
