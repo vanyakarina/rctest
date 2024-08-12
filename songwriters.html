@@ -71,8 +71,23 @@
         th {
             background-color: #f2f2f2;
         }
+        .ip-names-table, .ip-base-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .ip-names-table, .ip-base-table, .ip-names-table th, .ip-base-table th, .ip-names-table td, .ip-base-table td {
+            border: 1px solid black;
+        }
+        .ip-names-table th, .ip-base-table th {
+            background-color: #f2f2f2;
+        }
+        .export-import-buttons {
+            margin-bottom: 20px;
+        }
+        .export-import-buttons button {
+            margin-right: 10px;
+        }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <nav>
@@ -86,14 +101,23 @@
 
     <div class="container">
         <h1>Songwriters</h1>
+        <div class="export-import-buttons">
+            <button onclick="exportToExcel()">Export to Excel</button>
+            <input type="file" id="importFile" accept=".xlsx" onchange="importFromExcel()">
+        </div>
         <form id="songwriterForm">
-            <input type="hidden" id="editIndex">
             <label for="name">Name:</label>
             <input type="text" id="name" placeholder="Songwriter Name" required>
             <label for="ipNames">IP Names (comma separated):</label>
             <input type="text" id="ipNames" placeholder="IP Names (comma separated)">
             <label for="ipBase">IP Base (if applicable):</label>
             <input type="text" id="ipBase" placeholder="IP Base">
+            <label for="idNumber">ID Number:</label>
+            <input type="text" id="idNumber" placeholder="ID Number" required>
+            <label for="bankName">Bank Name:</label>
+            <input type="text" id="bankName" placeholder="Bank Name">
+            <label for="bankAccount">Bank Account Number:</label>
+            <input type="text" id="bankAccount" placeholder="Bank Account Number">
             <button type="button" onclick="submitSongwriter()">Submit Songwriter</button>
         </form>
 
@@ -104,6 +128,9 @@
                     <th>Name</th>
                     <th>IP Names</th>
                     <th>IP Base</th>
+                    <th>ID Number</th>
+                    <th>Bank Name</th>
+                    <th>Bank Account Number</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -112,11 +139,9 @@
                 <!-- Songwriter data will be added here -->
             </tbody>
         </table>
-
-        <button onclick="exportToExcel()">Export to Excel</button>
-        <input type="file" id="importFile" accept=".xlsx" onchange="importFromExcel()" />
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script>
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
 
@@ -124,21 +149,15 @@
             const name = document.getElementById('name').value;
             const ipNames = document.getElementById('ipNames').value.split(',').map(name => name.trim());
             const ipBase = document.getElementById('ipBase').value;
-            const index = document.getElementById('editIndex').value;
+            const idNumber = document.getElementById('idNumber').value;
+            const bankName = document.getElementById('bankName').value;
+            const bankAccount = document.getElementById('bankAccount').value;
 
-            if (index === '') {
-                // Add new songwriter
-                const songwriter = { name, ipNames, ipBase, signed: true };
-                songwriters.push(songwriter);
-            } else {
-                // Update existing songwriter
-                songwriters[index] = { name, ipNames, ipBase, signed: true };
-            }
-            
+            const songwriter = { name, ipNames, ipBase, idNumber, bankName, bankAccount, signed: true };
+            songwriters.push(songwriter);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
             document.getElementById('songwriterForm').reset();
-            document.getElementById('editIndex').value = '';
         }
 
         function updateSongwriterTable() {
@@ -149,20 +168,16 @@
                 row.insertCell(0).textContent = sw.name;
                 row.insertCell(1).textContent = sw.ipNames.join(', ');
                 row.insertCell(2).textContent = sw.ipBase;
-                row.insertCell(3).textContent = sw.signed ? 'Signed' : 'Unsigned';
-                row.insertCell(4).innerHTML = `
-                    <button onclick="editSongwriter(${index})">Edit</button> 
-                    <button onclick="deleteSongwriter(${index})">Delete</button>
-                `;
+                row.insertCell(3).textContent = sw.idNumber;
+                row.insertCell(4).textContent = sw.bankName;
+                row.insertCell(5).textContent = sw.bankAccount;
+                row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
+                row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
         }
 
         function editSongwriter(index) {
-            const songwriter = songwriters[index];
-            document.getElementById('name').value = songwriter.name;
-            document.getElementById('ipNames').value = songwriter.ipNames.join(', ');
-            document.getElementById('ipBase').value = songwriter.ipBase;
-            document.getElementById('editIndex').value = index;
+            // Handle edit functionality here
         }
 
         function deleteSongwriter(index) {
@@ -172,7 +187,7 @@
         }
 
         function exportToExcel() {
-            const ws = XLSX.utils.json_to_sheet(songwriters, { header: ["Name", "IP Names", "IP Base", "Status"] });
+            const ws = XLSX.utils.json_to_sheet(songwriters);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Songwriters");
             XLSX.writeFile(wb, "songwriters.xlsx");
@@ -180,23 +195,23 @@
 
         function importFromExcel() {
             const file = document.getElementById('importFile').files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                songwriters = json.map(sw => ({
-                    name: sw.Name,
-                    ipNames: sw["IP Names"] ? sw["IP Names"].split(',').map(name => name.trim()) : [],
-                    ipBase: sw["IP Base"] || '',
-                    signed: true
-                }));
-                localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                updateSongwriterTable();
-            };
-            reader.readAsArrayBuffer(file);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    songwriters = json.map(sw => ({
+                        ...sw,
+                        signed: true // Assume imported songwriters are signed
+                    }));
+                    localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                    updateSongwriterTable();
+                };
+                reader.readAsArrayBuffer(file);
+            }
         }
 
         // Initialize the page
