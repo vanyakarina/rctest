@@ -20,6 +20,8 @@
             background-color: #f2f2f2;
         }
     </style>
+    <!-- Include ExcelJS library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -31,6 +33,7 @@
 </select>
 
 <button onclick="calculateRoyalty()">Generate Report</button>
+<button onclick="exportToExcel()">Export to Excel</button>
 
 <table id="royaltyTable">
     <thead>
@@ -97,9 +100,6 @@
         tableBody.innerHTML = '';
 
         songTitles.forEach(song => {
-            const row = tableBody.insertRow();
-            row.insertCell(0).textContent = song.title;
-
             songwriters.forEach(writer => {
                 const signed = writer.signed ? 'Signed' : 'Unsigned';
                 const share = song.shares[writer.name] || 0;
@@ -120,6 +120,50 @@
                 writerRow.insertCell(6).textContent = signed === 'Signed' ? performance.toFixed(2) : '0.00';
                 writerRow.insertCell(7).textContent = signed === 'Signed' ? total.toFixed(2) : '0.00';
             });
+        });
+    }
+
+    function exportToExcel() {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Royalty Report');
+
+        // Adding header row
+        worksheet.columns = [
+            { header: 'Song Title', key: 'title', width: 30 },
+            { header: 'Songwriter', key: 'writer', width: 30 },
+            { header: 'Status', key: 'status', width: 15 },
+            { header: 'Digital Royalty', key: 'digital', width: 20 },
+            { header: 'Synch Royalty', key: 'synch', width: 20 },
+            { header: 'Mechanical Royalty', key: 'mechanical', width: 20 },
+            { header: 'Performance Royalty', key: 'performance', width: 20 },
+            { header: 'Total Royalty', key: 'total', width: 20 }
+        ];
+
+        // Adding data rows
+        const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
+        for (let i = 0; i < tableBody.rows.length; i++) {
+            const row = tableBody.rows[i];
+            worksheet.addRow({
+                title: row.cells[0].textContent,
+                writer: row.cells[1].textContent,
+                status: row.cells[2].textContent,
+                digital: row.cells[3].textContent,
+                synch: row.cells[4].textContent,
+                mechanical: row.cells[5].textContent,
+                performance: row.cells[6].textContent,
+                total: row.cells[7].textContent
+            });
+        }
+
+        // Exporting the workbook
+        workbook.xlsx.writeBuffer().then((data) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'Royalty_Report.xlsx';
+            anchor.click();
+            window.URL.revokeObjectURL(url);
         });
     }
 
