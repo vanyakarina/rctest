@@ -142,8 +142,9 @@
         }
 
         function calculateAllRoyalties() {
+            royalties = []; // Reset royalties array
+
             const inputRows = document.querySelectorAll('#inputTable tbody tr');
-            let totalRoyalties = [];
 
             inputRows.forEach(row => {
                 const songTitle = row.cells[0].textContent;
@@ -183,12 +184,12 @@
                 });
 
                 songData.forEach(data => {
-                    totalRoyalties.push(data);
+                    royalties.push(data);
                 });
             });
 
-            updateRoyaltyTable(totalRoyalties);
-            updateFilteredRoyaltyTable(totalRoyalties);
+            updateRoyaltyTable(royalties);
+            updateFilteredRoyaltyTable(royalties);
         }
 
         function updateRoyaltyTable(royaltyData) {
@@ -208,17 +209,10 @@
         }
 
         function updateFilteredRoyaltyTable(royaltyData) {
-            const filterSongwriter = document.getElementById('songwriterFilter').value;
-            let filteredData = royaltyData;
-
-            if (filterSongwriter !== 'All') {
-                filteredData = royaltyData.filter(data => data.name === filterSongwriter);
-            }
-
             const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-            
-            filteredData.reduce((acc, data) => {
+
+            const aggregatedData = royaltyData.reduce((acc, data) => {
                 const existing = acc.find(d => d.songwriter === data.name);
                 if (existing) {
                     existing.totalDigitalRoyalty += data.digital;
@@ -237,7 +231,9 @@
                     });
                 }
                 return acc;
-            }, []).forEach(data => {
+            }, []);
+
+            aggregatedData.forEach(data => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = data.songwriter;
                 row.insertCell(1).textContent = data.totalDigitalRoyalty.toFixed(2);
@@ -305,14 +301,14 @@
                 const wb = XLSX.read(data, { type: 'binary' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const json = XLSX.utils.sheet_to_json(ws);
-                // Process imported data
+                
                 json.forEach(row => {
                     const songTitle = row['Song Title'];
                     const digitalRoyalty = parseFloat(row['Digital Royalty']) || 0;
                     const synchRoyalty = parseFloat(row['Synch Royalty']) || 0;
                     const mechanicalRoyalty = parseFloat(row['Mechanical Royalty']) || 0;
                     const performanceRoyalty = parseFloat(row['Performance Royalty']) || 0;
-                    
+
                     const rowElements = document.querySelectorAll(`#inputTable tbody tr`);
                     rowElements.forEach(rowElement => {
                         if (rowElement.cells[0].textContent === songTitle) {
