@@ -324,14 +324,26 @@
         }
 
         function downloadTemplate() {
-            const template = [
-                ["Song Title", "Digital Royalty", "Synch Royalty", "Mechanical Royalty", "Performance Royalty"]
-            ];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(template);
-            XLSX.utils.book_append_sheet(wb, ws, "Template");
-            XLSX.writeFile(wb, "RoyaltyTemplate.xlsx");
-        }
+    // Fetch the catalogue data
+    const catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+    
+    // Create the template data
+    const template = [
+        ["Song Title", "Digital Royalty", "Synch Royalty", "Mechanical Royalty", "Performance Royalty"],
+        ...catalogue.map(song => [song.title, "", "", "", ""])
+    ];
+
+    // Create a new workbook and sheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(template);
+    
+    // Append the sheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+
+    // Write the workbook to a file
+    XLSX.writeFile(wb, "RoyaltyTemplate.xlsx");
+}
+
 
         document.addEventListener('DOMContentLoaded', function() {
             populateSongTitles();
