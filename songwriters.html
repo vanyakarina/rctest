@@ -10,8 +10,11 @@
         .input-form { display: flex; flex-direction: column; }
         .input-form div { display: flex; align-items: center; margin-bottom: 10px; }
         .input-form label { margin-right: 10px; width: 150px; }
-        .input-form input, .input-form select { flex: 1; }
-        .input-form select { flex: 2; }
+        .input-form input { flex: 1; }
+        .songwriters-list { margin-top: 20px; }
+        .songwriters-list table { width: 100%; border-collapse: collapse; }
+        .songwriters-list th, .songwriters-list td { border: 1px solid #ddd; padding: 8px; }
+        .songwriters-list th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
@@ -25,7 +28,7 @@
 
     <div class="content">
         <h1>Songwriters Input</h1>
-        <form id="songwriterForm" class="input-form">
+        <form id="songwritersForm" class="input-form">
             <div>
                 <label for="name">Name:</label>
                 <input type="text" id="name" required>
@@ -50,18 +53,11 @@
                 <label for="ipBases">IP Bases:</label>
                 <input type="text" id="ipBases">
             </div>
-            <div>
-                <label for="status">Status:</label>
-                <select id="status" required>
-                    <option value="Signed">Signed</option>
-                    <option value="Unsigned">Unsigned</option>
-                </select>
-            </div>
             <button type="button" onclick="addSongwriter()">Add Songwriter</button>
         </form>
-        
-        <h2>Songwriter List</h2>
-        <table id="songwriterTable">
+
+        <h2>Songwriters List</h2>
+        <table id="songwritersTable">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -90,27 +86,30 @@
             const ktpNumber = document.getElementById('ktpNumber').value;
             const ipNames = document.getElementById('ipNames').value;
             const ipBases = document.getElementById('ipBases').value;
-            const status = document.getElementById('status').value;
 
-            const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, status };
-
-            songwriters.push(songwriter);
-            localStorage.setItem('songwriters', JSON.stringify(songwriters));
-            renderSongwriters();
+            if (name && bankName && bankAccount && ktpNumber) {
+                const songwriter = { name, bankName, bankAccount, ktpNumber, ipNames, ipBases, status: 'Signed' };
+                songwriters.push(songwriter);
+                localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                renderSongwriters();
+                document.getElementById('songwritersForm').reset();
+            } else {
+                alert('Please fill in all required fields.');
+            }
         }
 
         function renderSongwriters() {
-            const songwriterTable = document.getElementById('songwriterTable').getElementsByTagName('tbody')[0];
-            songwriterTable.innerHTML = '';
+            const tableBody = document.getElementById('songwritersTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
 
             songwriters.forEach((sw, index) => {
-                const row = songwriterTable.insertRow();
+                const row = tableBody.insertRow();
                 row.insertCell(0).textContent = sw.name;
                 row.insertCell(1).textContent = sw.bankName;
                 row.insertCell(2).textContent = sw.bankAccount;
                 row.insertCell(3).textContent = sw.ktpNumber;
-                row.insertCell(4).textContent = sw.ipNames;
-                row.insertCell(5).textContent = sw.ipBases;
+                row.insertCell(4).textContent = sw.ipNames || 'N/A';
+                row.insertCell(5).textContent = sw.ipBases || 'N/A';
                 row.insertCell(6).textContent = sw.status;
                 row.insertCell(7).innerHTML = `<button onclick="editSongwriter(${index})">Edit</button> <button onclick="deleteSongwriter(${index})">Delete</button>`;
             });
@@ -126,7 +125,9 @@
             renderSongwriters();
         }
 
-        window.onload = renderSongwriters;
+        window.onload = function() {
+            renderSongwriters();
+        };
     </script>
 </body>
 </html>
