@@ -244,129 +244,105 @@
             });
         }
 
-        function saveRoyaltyReport(event) {
-            event.preventDefault();
-            const period = document.getElementById('period').value;
-            localStorage.setItem(`royaltyReport_${period}`, JSON.stringify(royalties));
-            alert('Royalty report saved!');
-        }
-
         function exportRoyaltyBreakdown() {
-            const wb = XLSX.utils.book_new();
-            let ws = XLSX.utils.json_to_sheet(royalties);
-            XLSX.utils.book_append_sheet(wb, ws, "Royalty Breakdown");
-            XLSX.writeFile(wb, "RoyaltyBreakdown.xlsx");
+            const table = document.getElementById('royaltyTable');
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, 'royalty_breakdown.xlsx');
         }
 
         function exportTotalRoyalties() {
-            const totalRoyalties = royalties.reduce((acc, data) => {
-                const existing = acc.find(d => d.songwriter === data.name);
-                if (existing) {
-                    existing.totalDigitalRoyalty += data.digital;
-                    existing.totalSynchRoyalty += data.synch;
-                    existing.totalMechanicalRoyalty += data.mechanical;
-                    existing.totalPerformanceRoyalty += data.performance;
-                    existing.totalRoyalty += data.total;
-                } else {
-                    acc.push({
-                        songwriter: data.name,
-                        totalDigitalRoyalty: data.digital,
-                        totalSynchRoyalty: data.synch,
-                        totalMechanicalRoyalty: data.mechanical,
-                        totalPerformanceRoyalty: data.performance,
-                        totalRoyalty: data.total
-                    });
-                }
-                return acc;
-            }, []);
-
-            const wb = XLSX.utils.book_new();
-            let ws = XLSX.utils.json_to_sheet(totalRoyalties);
-            XLSX.utils.book_append_sheet(wb, ws, "Total Royalties by Songwriter");
-            XLSX.writeFile(wb, "TotalRoyalties.xlsx");
+            const table = document.getElementById('filteredRoyaltyTable');
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, 'total_royalties.xlsx');
         }
 
         function importData() {
-            const fileInput = document.getElementById('importFile');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert('Please select a file.');
-                return;
-            }
+            const input = document.getElementById('importFile');
+            const file = input.files[0];
 
             const reader = new FileReader();
-            reader.onload = function(event) {
-                const data = event.target.result;
-                const wb = XLSX.read(data, { type: 'binary' });
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(ws);
-                
-                json.forEach(row => {
-                    const songTitle = row['Song Title'];
-                    const digitalRoyalty = parseFloat(row['Digital Royalty']) || 0;
-                    const synchRoyalty = parseFloat(row['Synch Royalty']) || 0;
-                    const mechanicalRoyalty = parseFloat(row['Mechanical Royalty']) || 0;
-                    const performanceRoyalty = parseFloat(row['Performance Royalty']) || 0;
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
 
-                    const rowElements = document.querySelectorAll(`#inputTable tbody tr`);
-                    rowElements.forEach(rowElement => {
-                        if (rowElement.cells[0].textContent === songTitle) {
-                            rowElement.querySelector('.digitalRoyalty').value = digitalRoyalty;
-                            rowElement.querySelector('.synchRoyalty').value = synchRoyalty;
-                            rowElement.querySelector('.mechanicalRoyalty').value = mechanicalRoyalty;
-                            rowElement.querySelector('.performanceRoyalty').value = performanceRoyalty;
-                        }
-                    });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const importedData = XLSX.utils.sheet_to_json(worksheet);
+
+                const inputTableBody = document.getElementById('inputTable').getElementsByTagName('tbody')[0];
+
+                importedData.forEach(row => {
+                    const title = row['Song Title'];
+                    const digital = row['Digital Royalty'] || 0;
+                    const synch = row['Synch Royalty'] || 0;
+                    const mechanical = row['Mechanical Royalty'] || 0;
+                    const performance = row['Performance Royalty'] || 0;
+
+                    const matchingRow = Array.from(inputTableBody.rows).find(r => r.cells[0].textContent === title);
+                    if (matchingRow) {
+                        matchingRow.querySelector('.digitalRoyalty').value = digital;
+                        matchingRow.querySelector('.synchRoyalty').value = synch;
+                        matchingRow.querySelector('.mechanicalRoyalty').value = mechanical;
+                        matchingRow.querySelector('.performanceRoyalty').value = performance;
+                    }
                 });
             };
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
 
         function downloadTemplate() {
-    // Fetch the catalogue data
-    const catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
-    
-    // Create the template data
-    const template = [
-        ["Song Title", "Digital Royalty", "Synch Royalty", "Mechanical Royalty", "Performance Royalty"],
-        ...catalogue.map(song => [song.title, "", "", "", ""])
-    ];
+            const headers = ['Song Title', 'Digital Royalty', 'Synch Royalty', 'Mechanical Royalty', 'Performance Royalty'];
+            const worksheet = XLSX.utils.aoa_to_sheet([headers]);
 
-    // Create a new workbook and sheet
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(template);
-    
-    // Append the sheet to the workbook
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, worksheet, 'Template');
+            XLSX.writeFile(wb, 'royalty_template.xlsx');
+        }
 
-    // Write the workbook to a file
-    XLSX.writeFile(wb, "RoyaltyTemplate.xlsx");
-}
-
-
-        document.addEventListener('DOMContentLoaded', function() {
-            populateSongTitles();
-            const periodSelect = document.getElementById('period');
+        function populatePeriodDropdown() {
+            const periodDropdown = document.getElementById('period');
+            const startYear = 2019;
+            const endYear = 2040;
             const periods = [];
-            for (let year = 2019; year <= 2040; year++) {
+
+            for (let year = startYear; year <= endYear; year++) {
                 periods.push(`Jan-Jun ${year}`);
                 periods.push(`Jul-Dec ${year}`);
             }
+
             periods.forEach(period => {
                 const option = document.createElement('option');
                 option.value = period;
                 option.textContent = period;
-                periodSelect.appendChild(option);
+                periodDropdown.appendChild(option);
             });
+        }
 
-            const songwriterFilter = document.getElementById('songwriterFilter');
-            songwriters.forEach(songwriter => {
-                const option = document.createElement('option');
-                option.value = songwriter.name;
-                option.textContent = songwriter.name;
-                songwriterFilter.appendChild(option);
-            });
+        function saveRoyaltyReport(event) {
+            event.preventDefault();
+            
+            const period = document.getElementById('period').value;
+            const dataToSave = {
+                period: period,
+                royalties: royalties
+            };
+
+            let royaltyReports = JSON.parse(localStorage.getItem('royaltyReports')) || [];
+            const existingReportIndex = royaltyReports.findIndex(report => report.period === period);
+
+            if (existingReportIndex !== -1) {
+                royaltyReports[existingReportIndex] = dataToSave;
+            } else {
+                royaltyReports.push(dataToSave);
+            }
+
+            localStorage.setItem('royaltyReports', JSON.stringify(royaltyReports));
+            alert('Royalty report saved successfully!');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateSongTitles();
+            populatePeriodDropdown();
         });
     </script>
 </body>
