@@ -37,6 +37,9 @@
         #exportImport {
             margin-bottom: 20px;
         }
+        .filters {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -51,6 +54,15 @@
 
     <div class="content">
         <h1>Royalty Report</h1>
+        
+        <div class="filters">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate">
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate">
+            <button onclick="updateRoyaltyTable()">Apply Filter</button>
+        </div>
+
         <div id="exportImport">
             <button onclick="exportData()">Export</button>
             <button onclick="importData()">Import</button>
@@ -90,54 +102,64 @@
             const tableBody = document.getElementById('royaltyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
             let totalRoyalty = 0;
+
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+
             catalogue.forEach(song => {
-                const songTitle = song.title;
-                const digitalRoyalty = song.digitalRoyalty || 0;
-                const synchRoyalty = song.synchRoyalty || 0;
-                const mechanicalRoyalty = song.mechanicalRoyalty || 0;
-                const performanceRoyalty = song.performanceRoyalty || 0;
-                const totalSongRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
+                // Filter by date if startDate and endDate are provided
+                const songDate = new Date(song.releaseDate);
+                if ((isNaN(startDate.getTime()) || songDate >= startDate) &&
+                    (isNaN(endDate.getTime()) || songDate <= endDate)) {
+                    
+                    const songTitle = song.title;
+                    const digitalRoyalty = song.digitalRoyalty || 0;
+                    const synchRoyalty = song.synchRoyalty || 0;
+                    const mechanicalRoyalty = song.mechanicalRoyalty || 0;
+                    const performanceRoyalty = song.performanceRoyalty || 0;
+                    const totalSongRoyalty = digitalRoyalty + synchRoyalty + mechanicalRoyalty + performanceRoyalty;
 
-                let signedSongwriters = song.songwriters.filter(sw => {
-                    const songwriter = songwriters.find(s => s.name === sw.name);
-                    return songwriter && songwriter.signed;
-                });
+                    let signedSongwriters = song.songwriters.filter(sw => {
+                        const songwriter = songwriters.find(s => s.name === sw.name);
+                        return songwriter && songwriter.signed;
+                    });
 
-                let totalSignedShare = signedSongwriters.reduce((total, sw) => total + sw.share, 0);
+                    let totalSignedShare = signedSongwriters.reduce((total, sw) => total + sw.share, 0);
 
-                song.songwriters.forEach(sw => {
-                    const songwriter = songwriters.find(s => s.name === sw.name);
-                    const isSigned = songwriter && songwriter.signed;
-                    let royalties = {
-                        name: sw.name,
-                        status: isSigned ? 'Signed' : 'Unsigned',
-                        digital: 0,
-                        synch: 0,
-                        mechanical: 0,
-                        performance: 0,
-                        total: 0
-                    };
+                    song.songwriters.forEach(sw => {
+                        const songwriter = songwriters.find(s => s.name === sw.name);
+                        const isSigned = songwriter && songwriter.signed;
+                        let royalties = {
+                            name: sw.name,
+                            status: isSigned ? 'Signed' : 'Unsigned',
+                            digital: 0,
+                            synch: 0,
+                            mechanical: 0,
+                            performance: 0,
+                            total: 0
+                        };
 
-                    if (isSigned) {
-                        royalties.digital = (sw.share / totalSignedShare) * digitalRoyalty;
-                        royalties.synch = (sw.share / totalSignedShare) * synchRoyalty;
-                        royalties.mechanical = (sw.share / totalSignedShare) * mechanicalRoyalty;
-                        royalties.performance = (sw.share / totalSignedShare) * performanceRoyalty;
-                    }
+                        if (isSigned) {
+                            royalties.digital = (sw.share / totalSignedShare) * digitalRoyalty;
+                            royalties.synch = (sw.share / totalSignedShare) * synchRoyalty;
+                            royalties.mechanical = (sw.share / totalSignedShare) * mechanicalRoyalty;
+                            royalties.performance = (sw.share / totalSignedShare) * performanceRoyalty;
+                        }
 
-                    royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
-                    totalRoyalty += royalties.total;
+                        royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
+                        totalRoyalty += royalties.total;
 
-                    const row = tableBody.insertRow();
-                    row.insertCell(0).textContent = songTitle;
-                    row.insertCell(1).textContent = royalties.name;
-                    row.insertCell(2).textContent = royalties.status;
-                    row.insertCell(3).textContent = royalties.digital.toFixed(2);
-                    row.insertCell(4).textContent = royalties.synch.toFixed(2);
-                    row.insertCell(5).textContent = royalties.mechanical.toFixed(2);
-                    row.insertCell(6).textContent = royalties.performance.toFixed(2);
-                    row.insertCell(7).textContent = royalties.total.toFixed(2);
-                });
+                        const row = tableBody.insertRow();
+                        row.insertCell(0).textContent = songTitle;
+                        row.insertCell(1).textContent = royalties.name;
+                        row.insertCell(2).textContent = royalties.status;
+                        row.insertCell(3).textContent = royalties.digital.toFixed(2);
+                        row.insertCell(4).textContent = royalties.synch.toFixed(2);
+                        row.insertCell(5).textContent = royalties.mechanical.toFixed(2);
+                        row.insertCell(6).textContent = royalties.performance.toFixed(2);
+                        row.insertCell(7).textContent = royalties.total.toFixed(2);
+                    });
+                }
             });
 
             document.getElementById('totalRoyalty').textContent = `Total Royalty: Rp${totalRoyalty.toFixed(2)}`;
