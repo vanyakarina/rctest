@@ -162,35 +162,39 @@
                 const performanceRoyalty = parseFloat(row.querySelector('.performanceRoyalty').value) || 0;
 
                 const song = catalogue.find(s => s.title === songTitle);
-                let songData = song.songwriters.map(sw => {
-                    const songwriter = songwriters.find(s => s.name === sw.name);
-                    const isSigned = songwriter && songwriter.signed;
-                    let royalties = {
-                        name: sw.name,
-                        songTitle: songTitle,
-                        status: isSigned ? 'Signed' : 'Unsigned',
-                        digital: 0,
-                        synch: 0,
-                        mechanical: 0,
-                        performance: 0,
-                        total: 0
-                    };
+                if (song) {
+                    let songData = song.songwriters.map(sw => {
+                        const songwriter = songwriters.find(s => s.name === sw.name);
+                        const isSigned = songwriter && songwriter.signed;
+                        let royalties = {
+                            name: sw.name,
+                            songTitle: songTitle,
+                            status: isSigned ? 'Signed' : 'Unsigned',
+                            digital: 0,
+                            synch: 0,
+                            mechanical: 0,
+                            performance: 0,
+                            total: 0
+                        };
 
-                    if (isSigned) {
-                        const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
-                        royalties.digital = (sw.share / totalShare) * digitalRoyalty;
-                        royalties.synch = (sw.share / totalShare) * synchRoyalty;
-                        royalties.mechanical = (sw.share / totalShare) * mechanicalRoyalty;
-                        royalties.performance = (sw.share / totalShare) * performanceRoyalty;
-                        royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
-                    }
+                        if (isSigned) {
+                            const totalShare = song.songwriters.reduce((sum, s) => sum + (s.share || 0), 0);
+                            royalties.digital = (sw.share / totalShare) * digitalRoyalty;
+                            royalties.synch = (sw.share / totalShare) * synchRoyalty;
+                            royalties.mechanical = (sw.share / totalShare) * mechanicalRoyalty;
+                            royalties.performance = (sw.share / totalShare) * performanceRoyalty;
+                            royalties.total = royalties.digital + royalties.synch + royalties.mechanical + royalties.performance;
+                        }
 
-                    return royalties;
-                });
+                        return royalties;
+                    });
 
-                songData.forEach(data => {
-                    totalRoyalties.push(data);
-                });
+                    songData.forEach(data => {
+                        if (data.status === 'Signed') {
+                            totalRoyalties.push(data);
+                        }
+                    });
+                }
             });
 
             updateRoyaltyTable(totalRoyalties);
@@ -223,4 +227,77 @@
 
             const songwriterTotals = filteredData.reduce((totals, data) => {
                 if (!totals[data.name]) {
-                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0
+                    totals[data.name] = { digital: 0, synch: 0, mechanical: 0, performance: 0, total: 0 };
+                }
+                totals[data.name].digital += data.digital;
+                totals[data.name].synch += data.synch;
+                totals[data.name].mechanical += data.mechanical;
+                totals[data.name].performance += data.performance;
+                totals[data.name].total += data.total;
+                return totals;
+            }, {});
+
+            const tableBody = document.getElementById('filteredRoyaltyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            Object.keys(songwriterTotals).forEach(name => {
+                const data = songwriterTotals[name];
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = name;
+                row.insertCell(1).textContent = data.digital.toFixed(2);
+                row.insertCell(2).textContent = data.synch.toFixed(2);
+                row.insertCell(3).textContent = data.mechanical.toFixed(2);
+                row.insertCell(4).textContent = data.performance.toFixed(2);
+                row.insertCell(5).textContent = data.total.toFixed(2);
+            });
+        }
+
+        function filterBySongwriter() {
+            updateFilteredRoyaltyTable(royalties);
+        }
+
+        function exportData() {
+            const data = JSON.stringify(royalties);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'royalties.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            if (fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                catalogue = data.catalogue || catalogue;
+                songwriters = data.songwriters || songwriters;
+                royalties = data.royalties || royalties;
+                localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                localStorage.setItem('royalties', JSON.stringify(royalties));
+                populateSongTitles();
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = function() {
+            populateSongTitles();
+            // Populate filter dropdown
+            const filterSelect = document.getElementById('filterSongwriter');
+            songwriters.forEach(sw => {
+                if (sw.signed) {
+                    const option = document.createElement('option');
+                    option.value = sw.name;
+                    option.textContent = sw.name;
+                    filterSelect.appendChild(option);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
