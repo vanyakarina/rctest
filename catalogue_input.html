@@ -78,7 +78,6 @@
             margin: 0 5px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.6/xlsx.full.min.js"></script>
 </head>
 <body>
     <nav>
@@ -142,13 +141,9 @@
             <span id="pageInfo">Page 1</span>
             <button id="nextPage" onclick="changePage(1)">Next</button>
         </div>
-        
-        <h2>Import Catalogue from Excel</h2>
-        <input type="file" id="fileInput" accept=".xlsx">
-        <button type="button" onclick="importFromExcel()">Import Catalogue</button>
-        <button type="button" onclick="downloadTemplate()">Download Template</button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
@@ -245,24 +240,41 @@
             for (let i = startIndex; i < endIndex; i++) {
                 const entry = catalogue[i];
                 const row = tableBody.insertRow();
-                row.insertCell(0).innerText = i + 1;
-                row.insertCell(1).innerText = entry.title;
-                row.insertCell(2).innerText = entry.releaseDate;
-                row.insertCell(3).innerText = entry.distributor;
-                row.insertCell(4).innerText = entry.isrc;
-                row.insertCell(5).innerText = entry.singer;
-                row.insertCell(6).innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
-
-                const actionCell = row.insertCell(7);
-                actionCell.innerHTML = `
-                    <button onclick="editCatalogue(${i})">Edit</button>
-                    <button onclick="deleteCatalogue(${i})">Delete</button>
-                `;
+                row.insertCell(0).textContent = i + 1;
+                row.insertCell(1).textContent = entry.title;
+                row.insertCell(2).textContent = entry.releaseDate;
+                row.insertCell(3).textContent = entry.distributor;
+                row.insertCell(4).textContent = entry.isrc;
+                row.insertCell(5).textContent = entry.singer;
+                row.insertCell(6).textContent = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${i})">Edit</button> <button onclick="deleteCatalogue(${i})">Delete</button>`;
             }
 
-            document.getElementById('pageInfo').innerText = `Page ${currentPage}`;
+            // Update page info
+            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
+
+            // Update pagination buttons
             document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = endIndex >= catalogue.length;
+            document.getElementById('nextPage').disabled = endIndex === catalogue.length;
+        }
+
+        function searchCatalogue() {
+            const searchQuery = document.getElementById('searchBar').value.toLowerCase();
+            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(searchQuery));
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            filteredCatalogue.forEach((entry, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = index + 1;
+                row.insertCell(1).textContent = entry.title;
+                row.insertCell(2).textContent = entry.releaseDate;
+                row.insertCell(3).textContent = entry.distributor;
+                row.insertCell(4).textContent = entry.isrc;
+                row.insertCell(5).textContent = entry.singer;
+                row.insertCell(6).textContent = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${index})">Edit</button> <button onclick="deleteCatalogue(${index})">Delete</button>`;
+            });
         }
 
         function editCatalogue(index) {
@@ -280,10 +292,9 @@
                 songwriterInput.innerHTML = `
                     <select class="songwriterName">
                         <option value="${sw.name}" selected>${sw.name} (Signed)</option>
-                        ${songwriters.map(s => s.name !== sw.name ? `<option value="${s.name}">${s.name} (Signed)</option>` : '').join('')}
                     </select>
-                    <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)">
-                    <input type="number" class="share" value="${sw.share}" placeholder="Share (%)" min="1" max="100" required>
+                    <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)" value="${sw.name}">
+                    <input type="number" class="share" placeholder="Share (%)" min="1" max="100" value="${sw.share}" required>
                     <select class="role">
                         <option value="A" ${sw.role === 'A' ? 'selected' : ''}>Author</option>
                         <option value="C" ${sw.role === 'C' ? 'selected' : ''}>Composer</option>
@@ -294,97 +305,48 @@
                 `;
                 songwriterDiv.appendChild(songwriterInput);
             });
-
             editingIndex = index;
         }
 
         function deleteCatalogue(index) {
-            if (confirm('Are you sure you want to delete this catalogue entry?')) {
-                catalogue.splice(index, 1);
-                localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                updateCatalogueTable();
-            }
-        }
-
-        function searchCatalogue() {
-            const query = document.getElementById('searchBar').value.toLowerCase();
-            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
-            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-
-            filteredCatalogue.forEach((entry, i) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).innerText = i + 1;
-                row.insertCell(1).innerText = entry.title;
-                row.insertCell(2).innerText = entry.releaseDate;
-                row.insertCell(3).innerText = entry.distributor;
-                row.insertCell(4).innerText = entry.isrc;
-                row.insertCell(5).innerText = entry.singer;
-                row.insertCell(6).innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
-
-                const actionCell = row.insertCell(7);
-                actionCell.innerHTML = `
-                    <button onclick="editCatalogue(${i})">Edit</button>
-                    <button onclick="deleteCatalogue(${i})">Delete</button>
-                `;
-            });
-        }
-
-        function changePage(direction) {
-            currentPage += direction;
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
             updateCatalogueTable();
         }
 
-        function importFromExcel() {
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a file to import.');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-                // Process the imported data and update catalogue
-                jsonData.forEach(row => {
-                    const songwritersData = row.Songwriters.split(', ').map(sw => {
-                        const [name, share] = sw.split(' (');
-                        return { name, share: parseFloat(share.replace('%)', '')), role: '' };
-                    });
-
-                    catalogue.push({
-                        title: row['Song Title'],
-                        releaseDate: row['Release Date'],
-                        distributor: row.Distributor,
-                        isrc: row.ISRC,
-                        singer: row['Singer/Performer'],
-                        songwriters: songwritersData
-                    });
-                });
-
-                localStorage.setItem('catalogue', JSON.stringify(catalogue));
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage > 0 && newPage <= Math.ceil(catalogue.length / entriesPerPage)) {
+                currentPage = newPage;
                 updateCatalogueTable();
-            };
-
-            reader.readAsArrayBuffer(file);
+            }
         }
 
         function downloadTemplate() {
+            const templateData = [
+                {
+                    "Song Title": "",
+                    "Release Date": "",
+                    "Distributor": "",
+                    "ISRC": "",
+                    "Singer/Performer": "",
+                    "Songwriters": ""
+                }
+            ];
+
+            // Create a new workbook and a new worksheet
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet([
-                { "Song Title": "", "Release Date": "", "Distributor": "", "ISRC": "", "Singer/Performer": "", "Songwriters": "" }
-            ]);
-            XLSX.utils.book_append_sheet(wb, ws, 'Catalogue Template');
-            XLSX.writeFile(wb, 'Catalogue_Template.xlsx');
+            const ws = XLSX.utils.json_to_sheet(templateData, { header: Object.keys(templateData[0]) });
+
+            // Append the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Catalogue Template");
+
+            // Write the workbook to a file
+            XLSX.writeFile(wb, "Catalogue_Template.xlsx");
         }
 
-        updateCatalogueTable(); // Initialize the table on page load
+        // Initialize table
+        updateCatalogueTable();
     </script>
 </body>
 </html>
