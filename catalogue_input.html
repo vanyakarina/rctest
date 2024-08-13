@@ -87,12 +87,19 @@
         <form id="catalogueForm">
             <label for="title">Song Title:</label>
             <input type="text" id="title" placeholder="Song Title" required>
+
             <label for="releaseDate">Release Date:</label>
             <input type="date" id="releaseDate" required>
+
             <label for="distributor">Distributor:</label>
             <input type="text" id="distributor" placeholder="Distributor" required>
+
             <label for="isrc">ISRC:</label>
             <input type="text" id="isrc" placeholder="ISRC (optional)">
+
+            <label for="singer">Singer/Performer:</label>
+            <input type="text" id="singer" placeholder="Singer/Performer" required>
+
             <label for="songwriters">Songwriters:</label>
             <div id="songwriters">
                 <!-- Songwriter inputs will be added here -->
@@ -106,10 +113,12 @@
         <table id="catalogueTable">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Title</th>
                     <th>Release Date</th>
                     <th>Distributor</th>
                     <th>ISRC</th>
+                    <th>Singer/Performer</th>
                     <th>Songwriters</th>
                     <th>Action</th>
                 </tr>
@@ -155,6 +164,7 @@
             const releaseDate = document.getElementById('releaseDate').value;
             const distributor = document.getElementById('distributor').value;
             const isrc = document.getElementById('isrc').value;
+            const singer = document.getElementById('singer').value;
             const songwriterInputs = document.querySelectorAll('#songwriters > div');
             let totalShare = 0;
             let songwritersData = [];
@@ -182,7 +192,7 @@
                 return;
             }
 
-            const catalogueEntry = { title, releaseDate, distributor, isrc, songwriters: songwritersData };
+            const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
             catalogue.push(catalogueEntry);
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
@@ -194,14 +204,20 @@
         function updateCatalogueTable() {
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
+
+            // Sort catalogue alphabetically by title
+            catalogue.sort((a, b) => a.title.localeCompare(b.title));
+
             catalogue.forEach((entry, index) => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = entry.title;
-                row.insertCell(1).textContent = entry.releaseDate;
-                row.insertCell(2).textContent = entry.distributor;
-                row.insertCell(3).textContent = entry.isrc || 'N/A';
-                row.insertCell(4).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
-                row.insertCell(5).innerHTML = '<button onclick="editCatalogue(' + index + ')">Edit</button> <button onclick="deleteCatalogue(' + index + ')">Delete</button>';
+                row.insertCell(0).textContent = index + 1;
+                row.insertCell(1).textContent = entry.title;
+                row.insertCell(2).textContent = entry.releaseDate;
+                row.insertCell(3).textContent = entry.distributor;
+                row.insertCell(4).textContent = entry.isrc || 'N/A';
+                row.insertCell(5).textContent = entry.singer;
+                row.insertCell(6).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
+                row.insertCell(7).innerHTML = '<button onclick="editCatalogue(' + index + ')">Edit</button> <button onclick="deleteCatalogue(' + index + ')">Delete</button>';
             });
         }
 
