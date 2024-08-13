@@ -202,7 +202,7 @@
                         songwriters.push({ name, signed: false });
                     }
 
-                    songwritersData.push({ name, share, role, status });
+                    songwritersData.push({ name, share, status });
                 }
             });
 
@@ -245,7 +245,7 @@
                     <td>${entry.distributor}</td>
                     <td>${entry.isrc || '-'}</td>
                     <td>${entry.singer}</td>
-                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.role})`).join(', ')}</td>
+                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}% - ${sw.status})`).join(', ')}</td>
                     <td><button onclick="editCatalogue(${i})">Edit</button></td>
                 `;
             }
@@ -293,11 +293,7 @@
                 songwriterInput.innerHTML = `
                     <input type="text" class="songwriterName" value="${sw.name}" readonly>
                     <input type="number" class="share" value="${sw.share}" required>
-                    <select class="role">
-                        <option value="A" ${sw.role === 'A' ? 'selected' : ''}>Author</option>
-                        <option value="C" ${sw.role === 'C' ? 'selected' : ''}>Composer</option>
-                        <option value="CA" ${sw.role === 'CA' ? 'selected' : ''}>Composer & Author</option>
-                    </select>
+                    <input type="text" class="role" value="${sw.status}" readonly>
                     <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
                     <br><br>
                 `;
