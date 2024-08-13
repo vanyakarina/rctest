@@ -110,6 +110,7 @@
         </form>
 
         <h2>Catalogue List</h2>
+        <input type="text" id="searchBar" placeholder="Search by Song Title" onkeyup="searchCatalogue()">
         <table id="catalogueTable">
             <thead>
                 <tr>
@@ -132,6 +133,7 @@
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
+        let editingIndex = -1; // Index of the item being edited
 
         function addSongwriterInput() {
             const songwriterDiv = document.getElementById('songwriters');
@@ -192,8 +194,14 @@
                 return;
             }
 
-            const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
-            catalogue.push(catalogueEntry);
+            if (editingIndex > -1) {
+                catalogue[editingIndex] = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                editingIndex = -1;
+            } else {
+                const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                catalogue.push(catalogueEntry);
+            }
+            
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateCatalogueTable();
@@ -222,13 +230,46 @@
         }
 
         function editCatalogue(index) {
-            // Handle edit functionality here
+            const entry = catalogue[index];
+            document.getElementById('title').value = entry.title;
+            document.getElementById('releaseDate').value = entry.releaseDate;
+            document.getElementById('distributor').value = entry.distributor;
+            document.getElementById('isrc').value = entry.isrc || '';
+            document.getElementById('singer').value = entry.singer;
+
+            // Clear existing songwriter inputs
+            document.getElementById('songwriters').innerHTML = '';
+
+            entry.songwriters.forEach(sw => {
+                addSongwriterInput();
+                const lastInput = document.querySelector('#songwriters > div:last-child');
+                lastInput.querySelector('.songwriterName').value = sw.name;
+                lastInput.querySelector('.newSongwriterName').value = sw.status === 'Unsigned' ? sw.name : '';
+                lastInput.querySelector('.share').value = sw.share;
+                lastInput.querySelector('.role').value = sw.role;
+            });
+
+            editingIndex = index;
         }
 
         function deleteCatalogue(index) {
             catalogue.splice(index, 1);
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
             updateCatalogueTable();
+        }
+
+        function searchCatalogue() {
+            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+            const tableRows = document.querySelectorAll('#catalogueTable tbody tr');
+
+            tableRows.forEach(row => {
+                const title = row.cells[1].textContent.toLowerCase();
+                if (title.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         // Initialize the page
