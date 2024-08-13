@@ -246,7 +246,10 @@
                     <td>${entry.isrc || '-'}</td>
                     <td>${entry.singer}</td>
                     <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}% - ${sw.status})`).join(', ')}</td>
-                    <td><button onclick="editCatalogue(${i})">Edit</button></td>
+                    <td>
+                        <button onclick="editCatalogue(${i})">Edit</button>
+                        <button onclick="deleteCatalogue(${i})">Delete</button>
+                    </td>
                 `;
             }
 
@@ -301,6 +304,12 @@
             });
 
             editingIndex = index;
+        }
+
+        function deleteCatalogue(index) {
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
         }
 
         // Initialize table on page load
