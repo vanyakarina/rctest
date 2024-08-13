@@ -5,16 +5,137 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catalogue Registration</title>
     <style>
-        /* Your existing styles */
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            display: inline-block;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .pagination button {
+            margin: 0 5px;
+        }
     </style>
 </head>
 <body>
     <nav>
-        <!-- Your existing navigation -->
+        <a href="index.html">Home</a>
+        <a href="catalogue_input.html">Catalogue Registration</a>
+        <a href="catalogue_list.html">Works</a>
+        <a href="songwriters.html">Songwriters</a>
+        <a href="royalty_calculator.html">Royalty Calculator</a>
+        <a href="royalty_report.html">Royalty Report</a>
     </nav>
 
     <div class="container">
-        <!-- Your existing form and table -->
+        <h1>Catalogue Registration</h1>
+        <form id="catalogueForm">
+            <label for="title">Song Title:</label>
+            <input type="text" id="title" placeholder="Song Title" required>
+
+            <label for="releaseDate">Release Date:</label>
+            <input type="date" id="releaseDate" required>
+
+            <label for="distributor">Distributor:</label>
+            <input type="text" id="distributor" placeholder="Distributor" required>
+
+            <label for="isrc">ISRC:</label>
+            <input type="text" id="isrc" placeholder="ISRC (optional)">
+
+            <label for="singer">Singer/Performer:</label>
+            <input type="text" id="singer" placeholder="Singer/Performer" required>
+
+            <label for="songwriters">Songwriters:</label>
+            <div id="songwriters">
+                <!-- Songwriter inputs will be added here -->
+            </div>
+            <button type="button" onclick="addSongwriterInput()">Add Songwriter</button>
+            <br><br>
+            <button type="button" onclick="submitCatalogue()">Submit Catalogue</button>
+        </form>
+
+        <h2>Catalogue List</h2>
+        <input type="text" id="searchBar" placeholder="Search by Song Title" onkeyup="searchCatalogue()">
+        <table id="catalogueTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Release Date</th>
+                    <th>Distributor</th>
+                    <th>ISRC</th>
+                    <th>Singer/Performer</th>
+                    <th>Songwriters</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Catalogue data will be added here -->
+            </tbody>
+        </table>
+
         <div class="pagination">
             <button id="prevPage" onclick="changePage(-1)">Previous</button>
             <span id="pageInfo">Page 1</span>
@@ -30,15 +151,79 @@
         const entriesPerPage = 10;
 
         function addSongwriterInput() {
-            // Your existing addSongwriterInput function
+            const songwriterDiv = document.getElementById('songwriters');
+            const songwriterInput = document.createElement('div');
+            songwriterInput.innerHTML = `
+                <select class="songwriterName">
+                    <option value="">Select Songwriter</option>
+                    ${songwriters.map(sw => `<option value="${sw.name}">${sw.name} (Signed)</option>`).join('')}
+                </select>
+                <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)">
+                <input type="number" class="share" placeholder="Share (%)" min="1" max="100" required>
+                <select class="role">
+                    <option value="">Select Role</option>
+                    <option value="A">Author</option>
+                    <option value="C">Composer</option>
+                    <option value="CA">Composer & Author</option>
+                </select>
+                <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
+                <br><br>
+            `;
+            songwriterDiv.appendChild(songwriterInput);
         }
 
         function removeSongwriterInput(button) {
-            // Your existing removeSongwriterInput function
+            button.parentElement.remove();
         }
 
         function submitCatalogue() {
-            // Your existing submitCatalogue function
+            const title = document.getElementById('title').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const distributor = document.getElementById('distributor').value;
+            const isrc = document.getElementById('isrc').value;
+            const singer = document.getElementById('singer').value;
+            const songwriterInputs = document.querySelectorAll('#songwriters > div');
+            let totalShare = 0;
+            let songwritersData = [];
+
+            songwriterInputs.forEach(input => {
+                const name = input.querySelector('.songwriterName').value || input.querySelector('.newSongwriterName').value;
+                const share = parseFloat(input.querySelector('.share').value) || 0;
+                const role = input.querySelector('.role').value;
+
+                if (name) {
+                    totalShare += share;
+
+                    let status = 'Unsigned';
+                    const existingSongwriter = songwriters.find(sw => sw.name === name);
+                    if (existingSongwriter) {
+                        status = 'Signed';
+                    } else {
+                        songwriters.push({ name, signed: false });
+                    }
+
+                    songwritersData.push({ name, share, role, status });
+                }
+            });
+
+            if (totalShare !== 100) {
+                alert('Total share percentage must be 100%.');
+                return;
+            }
+
+            if (editingIndex > -1) {
+                catalogue[editingIndex] = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                editingIndex = -1;
+            } else {
+                const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                catalogue.push(catalogueEntry);
+            }
+
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            localStorage.setItem('songwriters', JSON.stringify(songwriters));
+            updateCatalogueTable();
+            document.getElementById('catalogueForm').reset();
+            document.getElementById('songwriters').innerHTML = '';
         }
 
         function updateCatalogueTable() {
@@ -53,7 +238,7 @@
                 const entry = catalogue[i];
                 const row = tableBody.insertRow();
                 row.innerHTML = `
-                    <td>${i + 1}</td>
+                    <td>${startIndex + i + 1}</td>
                     <td>${entry.title}</td>
                     <td>${entry.releaseDate}</td>
                     <td>${entry.distributor}</td>
@@ -73,15 +258,63 @@
         }
 
         function editCatalogue(index) {
-            // Your existing editCatalogue function
+            const entry = catalogue[index];
+            document.getElementById('title').value = entry.title;
+            document.getElementById('releaseDate').value = entry.releaseDate;
+            document.getElementById('distributor').value = entry.distributor;
+            document.getElementById('isrc').value = entry.isrc;
+            document.getElementById('singer').value = entry.singer;
+
+            const songwriterDiv = document.getElementById('songwriters');
+            songwriterDiv.innerHTML = '';
+
+            entry.songwriters.forEach(sw => {
+                addSongwriterInput();
+                const lastInput = songwriterDiv.lastElementChild;
+                lastInput.querySelector('.songwriterName').value = sw.name;
+                lastInput.querySelector('.newSongwriterName').value = '';
+                lastInput.querySelector('.share').value = sw.share;
+                lastInput.querySelector('.role').value = sw.role;
+            });
+
+            editingIndex = index;
         }
 
         function deleteCatalogue(index) {
-            // Your existing deleteCatalogue function
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
         }
 
         function searchCatalogue() {
-            // Your existing searchCatalogue function
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
+            const startIndex = (currentPage - 1) * entriesPerPage;
+            const endIndex = Math.min(startIndex + entriesPerPage, filteredCatalogue.length);
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const entry = filteredCatalogue[i];
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${startIndex + i + 1}</td>
+                    <td>${entry.title}</td>
+                    <td>${entry.releaseDate}</td>
+                    <td>${entry.distributor}</td>
+                    <td>${entry.isrc || 'N/A'}</td>
+                    <td>${entry.singer}</td>
+                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ')}</td>
+                    <td>
+                        <button onclick="editCatalogue(${i})">Edit</button>
+                        <button onclick="deleteCatalogue(${i})">Delete</button>
+                    </td>
+                `;
+            }
+
+            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = endIndex >= filteredCatalogue.length;
         }
 
         function changePage(offset) {
