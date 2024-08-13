@@ -190,17 +190,19 @@
                 const name = input.querySelector('.songwriterName').value || input.querySelector('.newSongwriterName').value;
                 const share = parseFloat(input.querySelector('.share').value) || 0;
                 const role = input.querySelector('.role').value;
-                totalShare += share;
 
-                let status = 'Unsigned';
-                if (songwriters.find(sw => sw.name === name)) {
-                    status = 'Signed';
-                }
+                if (name) {
+                    totalShare += share;
 
-                songwritersData.push({ name, share, role, status });
+                    let status = 'Unsigned';
+                    const existingSongwriter = songwriters.find(sw => sw.name === name);
+                    if (existingSongwriter) {
+                        status = 'Signed';
+                    } else {
+                        songwriters.push({ name, signed: false });
+                    }
 
-                if (!status) {
-                    songwriters.push({ name, signed: false });
+                    songwritersData.push({ name, share, role, status });
                 }
             });
 
@@ -235,32 +237,27 @@
             const startIndex = (currentPage - 1) * entriesPerPage;
             const endIndex = Math.min(startIndex + entriesPerPage, catalogue.length);
 
-            // Create rows for the current page
             for (let i = startIndex; i < endIndex; i++) {
                 const entry = catalogue[i];
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = i + 1;
-                row.insertCell(1).textContent = entry.title;
-                row.insertCell(2).textContent = entry.releaseDate;
-                row.insertCell(3).textContent = entry.distributor;
-                row.insertCell(4).textContent = entry.isrc || 'N/A';
-                row.insertCell(5).textContent = entry.singer;
-                row.insertCell(6).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
-                row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${i})">Edit</button> <button onclick="deleteCatalogue(${i})">Delete</button>`;
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${entry.title}</td>
+                    <td>${entry.releaseDate}</td>
+                    <td>${entry.distributor}</td>
+                    <td>${entry.isrc || 'N/A'}</td>
+                    <td>${entry.singer}</td>
+                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ')}</td>
+                    <td>
+                        <button onclick="editCatalogue(${i})">Edit</button>
+                        <button onclick="deleteCatalogue(${i})">Delete</button>
+                    </td>
+                `;
             }
 
-            // Update pagination controls
+            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
             document.getElementById('prevPage').disabled = currentPage === 1;
             document.getElementById('nextPage').disabled = endIndex >= catalogue.length;
-            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
-        }
-
-        function changePage(direction) {
-            const newPage = currentPage + direction;
-            if (newPage > 0 && newPage <= Math.ceil(catalogue.length / entriesPerPage)) {
-                currentPage = newPage;
-                updateCatalogueTable();
-            }
         }
 
         function editCatalogue(index) {
@@ -271,18 +268,20 @@
             document.getElementById('isrc').value = entry.isrc;
             document.getElementById('singer').value = entry.singer;
 
-            document.getElementById('songwriters').innerHTML = '';
+            const songwriterDiv = document.getElementById('songwriters');
+            songwriterDiv.innerHTML = '';
+
             entry.songwriters.forEach(sw => {
-                const songwriterDiv = document.createElement('div');
-                songwriterDiv.innerHTML = `
+                const songwriterInput = document.createElement('div');
+                songwriterInput.innerHTML = `
                     <select class="songwriterName">
                         <option value="${sw.name}">${sw.name} (${sw.status})</option>
-                        ${songwriters.filter(s => s.name !== sw.name).map(s => `<option value="${s.name}">${s.name} (Signed)</option>`).join('')}
+                        ${songwriters.filter(s => s.name !== sw.name).map(s => `<option value="${s.name}">${s.name} (${s.signed ? 'Signed' : 'Unsigned'})</option>`).join('')}
                     </select>
                     <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)">
                     <input type="number" class="share" value="${sw.share}" placeholder="Share (%)" min="1" max="100" required>
                     <select class="role">
-                        <option value="${sw.role}">${sw.role}</option>
+                        <option value="${sw.role}">${sw.role === 'A' ? 'Author' : sw.role === 'C' ? 'Composer' : 'Composer & Author'}</option>
                         <option value="A">Author</option>
                         <option value="C">Composer</option>
                         <option value="CA">Composer & Author</option>
@@ -290,49 +289,56 @@
                     <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
                     <br><br>
                 `;
-                document.getElementById('songwriters').appendChild(songwriterDiv);
+                songwriterDiv.appendChild(songwriterInput);
             });
 
             editingIndex = index;
+            window.scrollTo(0, 0); // Scroll to the top of the page
         }
 
         function deleteCatalogue(index) {
-            catalogue.splice(index, 1);
-            localStorage.setItem('catalogue', JSON.stringify(catalogue));
-            updateCatalogueTable();
+            if (confirm('Are you sure you want to delete this entry?')) {
+                catalogue.splice(index, 1);
+                localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                updateCatalogueTable();
+            }
         }
 
         function searchCatalogue() {
-            const query = document.getElementById('searchBar').value.toLowerCase();
-            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
+            const searchValue = document.getElementById('searchBar').value.toLowerCase();
+            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(searchValue));
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
-            filteredCatalogue.sort((a, b) => a.title.localeCompare(b.title));
-
-            const startIndex = (currentPage - 1) * entriesPerPage;
-            const endIndex = Math.min(startIndex + entriesPerPage, filteredCatalogue.length);
-
-            for (let i = startIndex; i < endIndex; i++) {
-                const entry = filteredCatalogue[i];
+            filteredCatalogue.forEach((entry, index) => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = i + 1;
-                row.insertCell(1).textContent = entry.title;
-                row.insertCell(2).textContent = entry.releaseDate;
-                row.insertCell(3).textContent = entry.distributor;
-                row.insertCell(4).textContent = entry.isrc || 'N/A';
-                row.insertCell(5).textContent = entry.singer;
-                row.insertCell(6).innerHTML = entry.songwriters.map(sw => `${sw.name} (${sw.share}%, ${sw.status})`).join('<br>');
-                row.insertCell(7).innerHTML = `<button onclick="editCatalogue(${i})">Edit</button> <button onclick="deleteCatalogue(${i})">Delete</button>`;
-            }
-
-            document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = endIndex >= filteredCatalogue.length;
-            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${entry.title}</td>
+                    <td>${entry.releaseDate}</td>
+                    <td>${entry.distributor}</td>
+                    <td>${entry.isrc || 'N/A'}</td>
+                    <td>${entry.singer}</td>
+                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ')}</td>
+                    <td>
+                        <button onclick="editCatalogue(${index})">Edit</button>
+                        <button onclick="deleteCatalogue(${index})">Delete</button>
+                    </td>
+                `;
+            });
         }
 
-        // Initialize the page
-        updateCatalogueTable();
+        function changePage(offset) {
+            const newPage = currentPage + offset;
+            if (newPage > 0 && newPage <= Math.ceil(catalogue.length / entriesPerPage)) {
+                currentPage = newPage;
+                updateCatalogueTable();
+            }
+        }
+
+        window.onload = function() {
+            updateCatalogueTable();
+        };
     </script>
 </body>
 </html>
