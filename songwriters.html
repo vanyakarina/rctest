@@ -122,11 +122,11 @@
         </form>
 
         <h2>Songwriter List</h2>
-        <button onclick="exportSongwriters()">Export Songwriters</button>
         <input type="file" id="importFile" accept=".json" style="margin-top: 10px;" onchange="importSongwriters(event)">
         <table id="songwriterTable">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Name</th>
                     <th>ID Number</th>
                     <th>Bank Name</th>
@@ -173,14 +173,15 @@
             tableBody.innerHTML = '';
             songwriters.forEach((sw, index) => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).textContent = sw.name;
-                row.insertCell(1).textContent = sw.idNumber;
-                row.insertCell(2).textContent = sw.bankName;
-                row.insertCell(3).textContent = sw.bankAccount;
-                row.insertCell(4).textContent = sw.ipNames.map((name, i) => `${name} (${sw.ipNumbers[i]})`).join(', ');
-                row.insertCell(5).textContent = sw.ipBase;
-                row.insertCell(6).textContent = sw.signed ? 'Signed' : 'Unsigned';
-                row.insertCell(7).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
+                row.insertCell(0).textContent = index + 1;
+                row.insertCell(1).textContent = sw.name;
+                row.insertCell(2).textContent = sw.idNumber;
+                row.insertCell(3).textContent = sw.bankName;
+                row.insertCell(4).textContent = sw.bankAccount;
+                row.insertCell(5).textContent = sw.ipNames.map((name, i) => `${name} (${sw.ipNumbers[i]})`).join(', ');
+                row.insertCell(6).textContent = sw.ipBase;
+                row.insertCell(7).textContent = sw.signed ? 'Signed' : 'Unsigned';
+                row.insertCell(8).innerHTML = '<button onclick="editSongwriter(' + index + ')">Edit</button> <button onclick="deleteSongwriter(' + index + ')">Delete</button>';
             });
         }
 
@@ -209,73 +210,36 @@
                 ipNamesContainer.appendChild(row);
             });
 
-            document.getElementById('songwriterForm').innerHTML += '<button type="button" onclick="updateSongwriter(' + index + ')">Update</button>';
-        }
-
-        function updateSongwriter(index) {
-            const name = document.getElementById('name').value;
-            const idNumber = document.getElementById('idNumber').value;
-            const bankName = document.getElementById('bankName').value;
-            const bankAccount = document.getElementById('bankAccount').value;
-            const ipNames = Array.from(document.getElementsByClassName('ipName')).map(input => input.value).filter(value => value.trim() !== '');
-            const ipNumbers = Array.from(document.getElementsByClassName('ipNumber')).map(input => input.value).filter(value => value.trim() !== '');
-            const ipBase = document.getElementById('ipBase').value;
-
-            if (ipNames.length !== ipNumbers.length) {
-                alert('Each IP Name must have a corresponding IP Number.');
-                return;
-            }
-
-            const updatedSongwriter = { name, idNumber, bankName, bankAccount, ipNames, ipNumbers, ipBase, signed: true };
-            songwriters[index] = updatedSongwriter;
-            localStorage.setItem('songwriters', JSON.stringify(songwriters));
-            updateSongwriterTable();
-            document.getElementById('songwriterForm').reset();
-            document.getElementById('ipNamesContainer').innerHTML = '<div class="ip-row"><input type="text" class="ipName" placeholder="IP Name"><input type="text" class="ipNumber" placeholder="IP Number"></div>';
-        }
-
-        function deleteSongwriter(index) {
             songwriters.splice(index, 1);
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateSongwriterTable();
         }
 
-        function exportSongwriters() {
-            const dataStr = JSON.stringify(songwriters, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'songwriters.json';
-            a.click();
-            URL.revokeObjectURL(url);
+        function deleteSongwriter(index) {
+            if (confirm('Are you sure you want to delete this songwriter?')) {
+                songwriters.splice(index, 1);
+                localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                updateSongwriterTable();
+            }
         }
 
         function importSongwriters(event) {
             const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const content = e.target.result;
-                    try {
-                        const importedSongwriters = JSON.parse(content);
-                        if (Array.isArray(importedSongwriters)) {
-                            songwriters = importedSongwriters;
-                            localStorage.setItem('songwriters', JSON.stringify(songwriters));
-                            updateSongwriterTable();
-                        } else {
-                            alert('Invalid file format. Please upload a valid JSON file.');
-                        }
-                    } catch (error) {
-                        alert('Failed to parse JSON file.');
-                    }
-                };
-                reader.readAsText(file);
-            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedSongwriters = JSON.parse(e.target.result);
+                    songwriters = importedSongwriters;
+                    localStorage.setItem('songwriters', JSON.stringify(songwriters));
+                    updateSongwriterTable();
+                } catch (err) {
+                    alert('Failed to import songwriters. Please make sure the file is a valid JSON.');
+                }
+            };
+            reader.readAsText(file);
         }
 
-        // Initialize the page
-        updateSongwriterTable();
+        document.addEventListener('DOMContentLoaded', updateSongwriterTable);
     </script>
 </body>
 </html>
