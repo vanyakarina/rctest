@@ -189,7 +189,6 @@
             songwriterInputs.forEach(input => {
                 const name = input.querySelector('.songwriterName').value || input.querySelector('.newSongwriterName').value;
                 const share = parseFloat(input.querySelector('.share').value) || 0;
-                const role = input.querySelector('.role').value;
 
                 if (name) {
                     totalShare += share;
