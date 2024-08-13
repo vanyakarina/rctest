@@ -230,6 +230,11 @@
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
+            // Ensure songwriters array exists and is initialized
+            if (!Array.isArray(songwriters)) {
+                songwriters = [];
+            }
+
             // Calculate start and end index for the current page
             const startIndex = (currentPage - 1) * entriesPerPage;
             const endIndex = Math.min(startIndex + entriesPerPage, catalogueToDisplay.length);
@@ -238,11 +243,11 @@
                 const entry = catalogueToDisplay[i];
                 const row = tableBody.insertRow();
                 row.innerHTML = `
-                    <td>${startIndex + i + 1}</td>
+                    <td>${i + 1}</td>
                     <td>${entry.title}</td>
                     <td>${entry.releaseDate}</td>
                     <td>${entry.distributor}</td>
-                    <td>${entry.isrc || '-'}</td>
+                    <td>${entry.isrc}</td>
                     <td>${entry.singer}</td>
                     <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}% - ${sw.status})`).join(', ')}</td>
                     <td>
