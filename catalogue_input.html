@@ -77,13 +77,6 @@
         .pagination button {
             margin: 0 5px;
         }
-        .import-export-buttons {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .import-export-buttons button {
-            margin: 0 10px;
-        }
     </style>
 </head>
 <body>
@@ -123,12 +116,6 @@
             <button type="button" onclick="submitCatalogue()">Submit Catalogue</button>
         </form>
 
-        <div class="import-export-buttons">
-            <button type="button" onclick="downloadTemplate()">Download Template</button>
-            <input type="file" id="importFile" />
-            <button type="button" onclick="importData()">Import Data</button>
-        </div>
-
         <h2>Catalogue List</h2>
         <input type="text" id="searchBar" placeholder="Search by Song Title" onkeyup="searchCatalogue()">
         <table id="catalogueTable">
@@ -154,52 +141,42 @@
             <span id="pageInfo">Page 1</span>
             <button id="nextPage" onclick="changePage(1)">Next</button>
         </div>
+
+        <!-- Buttons for Importing and Downloading Template -->
+        <h2>Import/Export</h2>
+        <button onclick="document.getElementById('importFile').click()">Import from Excel</button>
+        <button onclick="downloadTemplate()">Download Excel Template</button>
+        <input type="file" id="importFile" style="display: none;" onchange="importFromExcel()">
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
         let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
         let editingIndex = -1; // Index of the item being edited
         let currentPage = 1;
-        const rowsPerPage = 10;
-
-        function renderCatalogue() {
-            const tableBody = document.querySelector("#catalogueTable tbody");
-            tableBody.innerHTML = "";
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = Math.min(start + rowsPerPage, catalogue.length);
-            for (let i = start; i < end; i++) {
-                const item = catalogue[i];
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td>${item.title}</td>
-                    <td>${item.releaseDate}</td>
-                    <td>${item.distributor}</td>
-                    <td>${item.isrc}</td>
-                    <td>${item.singer}</td>
-                    <td>${item.songwriters.join(', ')}</td>
-                    <td><button onclick="editCatalogue(${i})">Edit</button></td>
-                `;
-                tableBody.appendChild(row);
-            }
-            document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
-            document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = end === catalogue.length;
-        }
+        const entriesPerPage = 10;
 
         function addSongwriterInput() {
-            const container = document.getElementById('songwriters');
-            const index = container.children.length / 2 + 1;
-            const inputGroup = document.createElement('div');
-            inputGroup.innerHTML = `
-                <label for="songwriter${index}">Songwriter ${index}:</label>
-                <input type="text" id="songwriter${index}" placeholder="Songwriter Name">
-                <input type="text" id="percentage${index}" placeholder="Percentage Share">
+            const songwriterDiv = document.getElementById('songwriters');
+            const songwriterInput = document.createElement('div');
+            songwriterInput.innerHTML = `
+                <select class="songwriterName">
+                    <option value="">Select Songwriter</option>
+                    ${songwriters.map(sw => `<option value="${sw.name}">${sw.name} (Signed)</option>`).join('')}
+                </select>
+                <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)">
+                <input type="number" class="share" placeholder="Share (%)" min="1" max="100" required>
+                <select class="role">
+                    <option value="">Select Role</option>
+                    <option value="A">Author</option>
+                    <option value="C">Composer</option>
+                    <option value="CA">Composer & Author</option>
+                </select>
                 <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
+                <br><br>
             `;
-            container.appendChild(inputGroup);
+            songwriterDiv.appendChild(songwriterInput);
         }
 
         function removeSongwriterInput(button) {
@@ -212,99 +189,184 @@
             const distributor = document.getElementById('distributor').value;
             const isrc = document.getElementById('isrc').value;
             const singer = document.getElementById('singer').value;
+            const songwriterInputs = document.querySelectorAll('#songwriters > div');
+            let totalShare = 0;
+            let songwritersData = [];
 
-            const songwriterInputs = document.querySelectorAll('#songwriters input[id^="songwriter"]');
-            const percentages = document.querySelectorAll('#songwriters input[id^="percentage"]');
-            const songwriters = Array.from(songwriterInputs).map((input, index) => ({
-                name: input.value,
-                percentage: percentages[index].value
-            }));
+            songwriterInputs.forEach(input => {
+                const name = input.querySelector('.songwriterName').value || input.querySelector('.newSongwriterName').value;
+                const share = parseFloat(input.querySelector('.share').value) || 0;
+                const role = input.querySelector('.role').value;
+                totalShare += share;
 
-            if (title && releaseDate && distributor && singer && songwriters.length) {
-                catalogue.push({
-                    title,
-                    releaseDate,
-                    distributor,
-                    isrc,
-                    singer,
-                    songwriters: songwriters.map(sw => sw.name)
-                });
-                localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                renderCatalogue();
-                document.getElementById('catalogueForm').reset();
-                document.getElementById('songwriters').innerHTML = '';
-            } else {
-                alert('Please fill out all fields and add at least one songwriter.');
+                let status = 'Unsigned';
+                if (songwriters.find(sw => sw.name === name)) {
+                    status = 'Signed';
+                }
+
+                songwritersData.push({ name, share, role, status });
+
+                if (!status) {
+                    songwriters.push({ name, signed: false });
+                }
+            });
+
+            if (totalShare !== 100) {
+                alert('Total share percentage must be 100%.');
+                return;
             }
+
+            if (editingIndex > -1) {
+                catalogue[editingIndex] = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                editingIndex = -1;
+            } else {
+                const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
+                catalogue.push(catalogueEntry);
+            }
+            
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            localStorage.setItem('songwriters', JSON.stringify(songwriters));
+            updateCatalogueTable();
+            document.getElementById('catalogueForm').reset();
+            document.getElementById('songwriters').innerHTML = '';
+        }
+
+        function updateCatalogueTable() {
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            // Sort catalogue alphabetically by title
+            catalogue.sort((a, b) => a.title.localeCompare(b.title));
+
+            // Calculate start and end index for the current page
+            const startIndex = (currentPage - 1) * entriesPerPage;
+            const endIndex = Math.min(startIndex + entriesPerPage, catalogue.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const entry = catalogue[i];
+                const row = tableBody.insertRow();
+                row.insertCell().innerText = i + 1;
+                row.insertCell().innerText = entry.title;
+                row.insertCell().innerText = entry.releaseDate;
+                row.insertCell().innerText = entry.distributor;
+                row.insertCell().innerText = entry.isrc || '-';
+                row.insertCell().innerText = entry.singer;
+                row.insertCell().innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                const actionCell = row.insertCell();
+                actionCell.innerHTML = `
+                    <button onclick="editCatalogue(${i})">Edit</button>
+                    <button onclick="deleteCatalogue(${i})">Delete</button>
+                `;
+            }
+
+            document.getElementById('pageInfo').innerText = `Page ${currentPage}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = endIndex >= catalogue.length;
+        }
+
+        function editCatalogue(index) {
+            const entry = catalogue[index];
+            document.getElementById('title').value = entry.title;
+            document.getElementById('releaseDate').value = entry.releaseDate;
+            document.getElementById('distributor').value = entry.distributor;
+            document.getElementById('isrc').value = entry.isrc;
+            document.getElementById('singer').value = entry.singer;
+
+            const songwriterDiv = document.getElementById('songwriters');
+            songwriterDiv.innerHTML = '';
+
+            entry.songwriters.forEach(sw => {
+                const songwriterInput = document.createElement('div');
+                songwriterInput.innerHTML = `
+                    <select class="songwriterName">
+                        <option value="${sw.name}">${sw.name} (Signed)</option>
+                        ${songwriters.filter(s => s.name !== sw.name).map(s => `<option value="${s.name}">${s.name} (Signed)</option>`).join('')}
+                    </select>
+                    <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)" value="${sw.name}">
+                    <input type="number" class="share" placeholder="Share (%)" min="1" max="100" value="${sw.share}" required>
+                    <select class="role">
+                        <option value="${sw.role}">${sw.role}</option>
+                        <option value="A">Author</option>
+                        <option value="C">Composer</option>
+                        <option value="CA">Composer & Author</option>
+                    </select>
+                    <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
+                    <br><br>
+                `;
+                songwriterDiv.appendChild(songwriterInput);
+            });
+
+            editingIndex = index;
+        }
+
+        function deleteCatalogue(index) {
+            catalogue.splice(index, 1);
+            localStorage.setItem('catalogue', JSON.stringify(catalogue));
+            updateCatalogueTable();
         }
 
         function searchCatalogue() {
             const query = document.getElementById('searchBar').value.toLowerCase();
-            const filteredCatalogue = catalogue.filter(item => item.title.toLowerCase().includes(query));
-            const tableBody = document.querySelector("#catalogueTable tbody");
-            tableBody.innerHTML = "";
-            filteredCatalogue.forEach((item, index) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${item.title}</td>
-                    <td>${item.releaseDate}</td>
-                    <td>${item.distributor}</td>
-                    <td>${item.isrc}</td>
-                    <td>${item.singer}</td>
-                    <td>${item.songwriters.join(', ')}</td>
-                    <td><button onclick="editCatalogue(${index})">Edit</button></td>
+            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
+            const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            filteredCatalogue.forEach((entry, i) => {
+                const row = tableBody.insertRow();
+                row.insertCell().innerText = i + 1;
+                row.insertCell().innerText = entry.title;
+                row.insertCell().innerText = entry.releaseDate;
+                row.insertCell().innerText = entry.distributor;
+                row.insertCell().innerText = entry.isrc || '-';
+                row.insertCell().innerText = entry.singer;
+                row.insertCell().innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                const actionCell = row.insertCell();
+                actionCell.innerHTML = `
+                    <button onclick="editCatalogue(${i})">Edit</button>
+                    <button onclick="deleteCatalogue(${i})">Delete</button>
                 `;
-                tableBody.appendChild(row);
             });
         }
 
-        function editCatalogue(index) {
-            const item = catalogue[index];
-            document.getElementById('title').value = item.title;
-            document.getElementById('releaseDate').value = item.releaseDate;
-            document.getElementById('distributor').value = item.distributor;
-            document.getElementById('isrc').value = item.isrc;
-            document.getElementById('singer').value = item.singer;
-            document.getElementById('songwriters').innerHTML = '';
-            item.songwriters.forEach((sw, idx) => {
-                addSongwriterInput();
-                document.querySelector(`#songwriters #songwriter${idx + 1}`).value = sw;
-            });
-            editingIndex = index;
+        function changePage(direction) {
+            if ((direction === -1 && currentPage > 1) || (direction === 1 && (currentPage * entriesPerPage < catalogue.length))) {
+                currentPage += direction;
+                updateCatalogueTable();
+            }
         }
 
-        function changePage(offset) {
-            currentPage += offset;
-            renderCatalogue();
+        function importFromExcel() {
+            const file = document.getElementById('importFile').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    json.forEach(entry => {
+                        catalogue.push(entry);
+                    });
+                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                    updateCatalogueTable();
+                };
+                reader.readAsArrayBuffer(file);
+            }
         }
 
         function downloadTemplate() {
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet([
-                ["Song Title", "Release Date", "Distributor", "ISRC", "Singer/Performer", "Songwriters"]
-            ]);
-            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            const ws_data = [
+                ["Title", "Release Date", "Distributor", "ISRC", "Singer", "Songwriters"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Catalogue Template");
             XLSX.writeFile(wb, "Catalogue_Template.xlsx");
         }
 
-        function importData() {
-            const fileInput = document.getElementById('importFile');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select a file to import.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                jsonData.slice(1).forEach(row => {
-                    if (row.length === 6) {
-                        catalogue.push({
-                            title: row[0],
-   
+        // Initialize table on page load
+        updateCatalogueTable();
+    </script>
+</body>
+</html>
