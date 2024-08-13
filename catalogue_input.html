@@ -236,10 +236,10 @@
             }
 
             // Calculate start and end index for the current page
-            const startIndex = (currentPage - 1) * entriesPerPage;
-            const endIndex = Math.min(startIndex + entriesPerPage, catalogueToDisplay.length);
+            const start = (currentPage - 1) * entriesPerPage;
+            const end = Math.min(start + entriesPerPage, catalogueToDisplay.length);
 
-            for (let i = startIndex; i < endIndex; i++) {
+            for (let i = start; i < end; i++) {
                 const entry = catalogueToDisplay[i];
                 const row = tableBody.insertRow();
                 row.innerHTML = `
