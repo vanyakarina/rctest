@@ -202,13 +202,11 @@
                 let status = 'Unsigned';
                 if (songwriters.find(sw => sw.name === name)) {
                     status = 'Signed';
+                } else {
+                    songwriters.push({ name, signed: false });
                 }
 
                 songwritersData.push({ name, share, role, status });
-
-                if (!status) {
-                    songwriters.push({ name, signed: false });
-                }
             });
 
             if (totalShare !== 100) {
@@ -245,29 +243,32 @@
                 row.insertCell().innerText = entry.title;
                 row.insertCell().innerText = entry.releaseDate;
                 row.insertCell().innerText = entry.distributor;
-                row.insertCell().innerText = entry.isrc || '-';
+                row.insertCell().innerText = entry.isrc || 'N/A';
                 row.insertCell().innerText = entry.singer;
-                row.insertCell().innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                row.insertCell().innerText = entry.songwriters.map(sw => sw.name + ' (' + sw.share + '%)').join(', ');
                 const actionCell = row.insertCell();
-                actionCell.innerHTML = `
-                    <button onclick="editCatalogue(${i})">Edit</button>
-                    <button onclick="deleteCatalogue(${i})">Delete</button>
-                `;
+                actionCell.innerHTML = `<button onclick="editCatalogue(${i})">Edit</button>`;
             }
 
             document.getElementById('pageInfo').innerText = `Page ${currentPage}`;
             document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = endIndex >= catalogue.length;
+            document.getElementById('nextPage').disabled = endIndex === catalogue.length;
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            updateCatalogueTable();
         }
 
         function editCatalogue(index) {
+            editingIndex = index;
             const entry = catalogue[index];
             document.getElementById('title').value = entry.title;
             document.getElementById('releaseDate').value = entry.releaseDate;
             document.getElementById('distributor').value = entry.distributor;
-            document.getElementById('isrc').value = entry.isrc;
+            document.getElementById('isrc').value = entry.isrc || '';
             document.getElementById('singer').value = entry.singer;
-
+            
             const songwriterDiv = document.getElementById('songwriters');
             songwriterDiv.innerHTML = '';
 
@@ -275,124 +276,97 @@
                 const songwriterInput = document.createElement('div');
                 songwriterInput.innerHTML = `
                     <select class="songwriterName">
-                        <option value="${sw.name}">${sw.name} (Signed)</option>
-                        ${songwriters.filter(s => s.name !== sw.name).map(s => `<option value="${s.name}">${s.name} (Signed)</option>`).join('')}
+                        <option value="">Select Songwriter</option>
+                        ${songwriters.map(s => `<option value="${s.name}" ${s.name === sw.name ? 'selected' : ''}>${s.name} (Signed)</option>`).join('')}
                     </select>
-                    <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)" value="${sw.name}">
+                    <input type="text" class="newSongwriterName" placeholder="New Songwriter Name (if not in the list)" value="${sw.name === entry.name ? sw.name : ''}">
                     <input type="number" class="share" placeholder="Share (%)" min="1" max="100" value="${sw.share}" required>
                     <select class="role">
-                        <option value="${sw.role}">${sw.role}</option>
-                        <option value="A">Author</option>
-                        <option value="C">Composer</option>
-                        <option value="CA">Composer & Author</option>
+                        <option value="">Select Role</option>
+                        <option value="A" ${sw.role === 'A' ? 'selected' : ''}>Author</option>
+                        <option value="C" ${sw.role === 'C' ? 'selected' : ''}>Composer</option>
+                        <option value="CA" ${sw.role === 'CA' ? 'selected' : ''}>Composer & Author</option>
                     </select>
                     <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
                     <br><br>
                 `;
                 songwriterDiv.appendChild(songwriterInput);
             });
-
-            editingIndex = index;
-        }
-
-        function deleteCatalogue(index) {
-            catalogue.splice(index, 1);
-            localStorage.setItem('catalogue', JSON.stringify(catalogue));
-            updateCatalogueTable();
         }
 
         function searchCatalogue() {
             const query = document.getElementById('searchBar').value.toLowerCase();
             const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
+            updateTable(filteredCatalogue);
+        }
+
+        function updateTable(data) {
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
-            filteredCatalogue.forEach((entry, i) => {
+            data.forEach((entry, index) => {
                 const row = tableBody.insertRow();
-                row.insertCell().innerText = i + 1;
+                row.insertCell().innerText = index + 1;
                 row.insertCell().innerText = entry.title;
                 row.insertCell().innerText = entry.releaseDate;
                 row.insertCell().innerText = entry.distributor;
-                row.insertCell().innerText = entry.isrc || '-';
+                row.insertCell().innerText = entry.isrc || 'N/A';
                 row.insertCell().innerText = entry.singer;
-                row.insertCell().innerText = entry.songwriters.map(sw => `${sw.name} (${sw.share}%)`).join(', ');
+                row.insertCell().innerText = entry.songwriters.map(sw => sw.name + ' (' + sw.share + '%)').join(', ');
                 const actionCell = row.insertCell();
-                actionCell.innerHTML = `
-                    <button onclick="editCatalogue(${i})">Edit</button>
-                    <button onclick="deleteCatalogue(${i})">Delete</button>
-                `;
-            });
-        }
-
-        function changePage(direction) {
-            if ((direction === -1 && currentPage > 1) || (direction === 1 && (currentPage * entriesPerPage < catalogue.length))) {
-                currentPage += direction;
-                updateCatalogueTable();
-            }
-        }
-
-        function importFromExcel() {
-            const file = document.getElementById('importFile').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    const headers = json[0];
-                    const dataRows = json.slice(1);
-
-                    const titleIndex = headers.indexOf('Title');
-                    const releaseDateIndex = headers.indexOf('Release Date');
-                    const distributorIndex = headers.indexOf('Distributor');
-                    const isrcIndex = headers.indexOf('ISRC');
-                    const singerIndex = headers.indexOf('Singer');
-                    const songwritersIndex = headers.indexOf('Songwriters');
-
-                    dataRows.forEach(row => {
-                        const title = row[titleIndex];
-                        const releaseDate = row[releaseDateIndex];
-                        const distributor = row[distributorIndex];
-                        const isrc = row[isrcIndex];
-                        const singer = row[singerIndex];
-                        const songwriters = parseSongwriters(row[songwritersIndex]);
-
-                        catalogue.push({ title, releaseDate, distributor, isrc, singer, songwriters });
-                    });
-
-                    localStorage.setItem('catalogue', JSON.stringify(catalogue));
-                    updateCatalogueTable();
-                };
-                reader.readAsArrayBuffer(file);
-            }
-        }
-
-        function parseSongwriters(songwritersString) {
-            // Example parsing function, assumes songwriters are listed as name (share%) and separated by commas
-            return songwritersString.split(',').map(sw => {
-                const [name, share] = sw.trim().split('(');
-                return {
-                    name: name.trim(),
-                    share: parseFloat(share.replace('%)', '').trim()),
-                    role: 'Unknown', // Default or can be extracted if available
-                    status: 'Unknown' // Default or can be extracted if available
-                };
+                actionCell.innerHTML = `<button onclick="editCatalogue(${index})">Edit</button>`;
             });
         }
 
         function downloadTemplate() {
-            const wb = XLSX.utils.book_new();
-            const ws_data = [
-                ["Title", "Release Date", "Distributor", "ISRC", "Singer", "Songwriters"]
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            XLSX.utils.book_append_sheet(wb, ws, "Catalogue Template");
-            XLSX.writeFile(wb, "Catalogue_Template.xlsx");
+            const template = `
+                Song Title,Release Date,Distributor,ISRC,Singer/Performer,Songwriter Name,Share (%),Role
+                Example Title,2024-01-01,Example Distributor,EXAMPLE,Example Singer,Example Songwriter,50,Author
+            `;
+            const blob = new Blob([template], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'catalogue_template.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        // Initialize table on page load
+        function importFromExcel() {
+            const file = document.getElementById('importFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                rows.forEach(row => {
+                    if (row[0] && row[1]) { // Basic validation
+                        catalogue.push({
+                            title: row[0],
+                            releaseDate: row[1],
+                            distributor: row[2],
+                            isrc: row[3],
+                            singer: row[4],
+                            songwriters: [{
+                                name: row[5],
+                                share: row[6],
+                                role: row[7]
+                            }]
+                        });
+                    }
+                });
+
+                localStorage.setItem('catalogue', JSON.stringify(catalogue));
+                updateCatalogueTable();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Initial table update
         updateCatalogueTable();
     </script>
 </body>
