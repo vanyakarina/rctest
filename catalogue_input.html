@@ -218,7 +218,7 @@
                 const catalogueEntry = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
                 catalogue.push(catalogueEntry);
             }
-            
+
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
             localStorage.setItem('songwriters', JSON.stringify(songwriters));
             updateCatalogueTable();
@@ -229,9 +229,6 @@
         function updateCatalogueTable() {
             const tableBody = document.getElementById('catalogueTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
-
-            // Sort catalogue alphabetically by title
-            catalogue.sort((a, b) => a.title.localeCompare(b.title));
 
             // Calculate start and end index for the current page
             const startIndex = (currentPage - 1) * entriesPerPage;
@@ -265,7 +262,7 @@
             document.getElementById('title').value = entry.title;
             document.getElementById('releaseDate').value = entry.releaseDate;
             document.getElementById('distributor').value = entry.distributor;
-            document.getElementById('isrc').value = entry.isrc;
+            document.getElementById('isrc').value = entry.isrc || '';
             document.getElementById('singer').value = entry.singer;
 
             const songwriterDiv = document.getElementById('songwriters');
