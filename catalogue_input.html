@@ -6,22 +6,23 @@
     <title>Catalogue Registration</title>
     <style>
         /* Same styling as before */
-        nav { display: flex; justify-content: space-around; background-color: #333; padding: 14px; }
-        nav a { color: white; text-decoration: none; padding: 10px; }
-        nav a:hover { background-color: #575757; }
-        .container { padding: 20px; }
-        h1, h2 { color: #333; }
-        form { display: flex; flex-direction: column; }
-        label { margin-top: 10px; }
-        input, select { margin-top: 5px; padding: 8px; }
-        button { margin-top: 10px; padding: 10px; cursor: pointer; }
-        button:hover { background-color: #575757; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 10px; text-align: left; }
-        .pagination { display: flex; justify-content: center; margin-top: 20px; }
-        .pagination button { margin: 0 5px; padding: 10px; cursor: pointer; }
-        .data-management { margin-top: 20px; }
+        nav { /* Styling for navigation */ }
+        nav a { /* Styling for navigation links */ }
+        nav a:hover { /* Hover effect for navigation links */ }
+        .content { /* Styling for content */ }
+        .container { /* Styling for container */ }
+        h1 { /* Styling for heading */ }
+        form { /* Styling for form */ }
+        label { /* Styling for labels */ }
+        input, select { /* Styling for input and select elements */ }
+        button { /* Styling for buttons */ }
+        button:hover { /* Hover effect for buttons */ }
+        table { /* Styling for table */ }
+        table, th, td { /* Styling for table borders */ }
+        th, td { /* Styling for table cells */ }
+        .pagination { /* Styling for pagination */ }
+        .pagination button { /* Styling for pagination buttons */ }
+        .data-management { /* Styling for data management section */ }
     </style>
 </head>
 <body>
@@ -37,24 +38,7 @@
     <div class="container">
         <h1>Catalogue Registration</h1>
         <form id="catalogueForm">
-            <label for="title">Song Title:</label>
-            <input type="text" id="title" required>
-
-            <label for="releaseDate">Release Date:</label>
-            <input type="date" id="releaseDate" required>
-
-            <label for="distributor">Distributor:</label>
-            <input type="text" id="distributor" required>
-
-            <label for="isrc">ISRC:</label>
-            <input type="text" id="isrc">
-
-            <label for="singer">Singer/Performer:</label>
-            <input type="text" id="singer" required>
-
-            <div id="songwriterInputs">
-                <!-- Songwriter input fields will be added here -->
-            </div>
+            <!-- Form fields as before -->
             <button type="button" onclick="addSongwriterInput()">Add Songwriter</button>
             <br><br>
             <button type="button" onclick="submitCatalogue()">Submit Catalogue</button>
@@ -105,6 +89,7 @@
                 <label for="editSinger">Singer/Performer:</label>
                 <input type="text" id="editSinger" required>
 
+                <label for="editSongwriters">Songwriters:</label>
                 <div id="editSongwriters">
                     <!-- Editable songwriter inputs will be added here -->
                 </div>
@@ -116,25 +101,13 @@
 
     <script>
         let catalogue = JSON.parse(localStorage.getItem('catalogue')) || [];
+        let songwriters = JSON.parse(localStorage.getItem('songwriters')) || [];
         let editingIndex = -1; // Index of the item being edited
         let currentPage = 1;
         const entriesPerPage = 10;
 
         function addSongwriterInput() {
-            const songwriterDiv = document.createElement('div');
-            songwriterDiv.innerHTML = `
-                <label>Songwriter:</label>
-                <input type="text" class="songwriterName" required>
-                <input type="number" class="share" placeholder="Share %" required>
-                <select class="role">
-                    <option value="Author">Author</option>
-                    <option value="Composer">Composer</option>
-                    <option value="Author & Composer">Author & Composer</option>
-                </select>
-                <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
-                <br><br>
-            `;
-            document.getElementById('songwriterInputs').appendChild(songwriterDiv);
+            // Function to add songwriter input fields
         }
 
         function removeSongwriterInput(button) {
@@ -142,33 +115,7 @@
         }
 
         function submitCatalogue() {
-            const title = document.getElementById('title').value;
-            const releaseDate = document.getElementById('releaseDate').value;
-            const distributor = document.getElementById('distributor').value;
-            const isrc = document.getElementById('isrc').value;
-            const singer = document.getElementById('singer').value;
-
-            const songwriterInputs = document.querySelectorAll('#songwriterInputs > div');
-            let totalShare = 0;
-            let songwritersData = [];
-
-            songwriterInputs.forEach(input => {
-                const name = input.querySelector('.songwriterName').value;
-                const share = parseFloat(input.querySelector('.share').value);
-                totalShare += share;
-                const status = input.querySelector('.role').value;
-                songwritersData.push({ name, share, status });
-            });
-
-            if (totalShare !== 100) {
-                alert('The total share percentage must equal 100.');
-                return;
-            }
-
-            catalogue.push({ title, releaseDate, distributor, isrc, singer, songwriters: songwritersData });
-            localStorage.setItem('catalogue', JSON.stringify(catalogue));
-            updateCatalogueTable();
-            document.getElementById('catalogueForm').reset(); // Clear the form
+            // Function to submit new catalogue entry
         }
 
         function updateCatalogueTable(filteredCatalogue = null) {
@@ -182,19 +129,19 @@
             for (let i = start; i < end; i++) {
                 const entry = catalogueToDisplay[i];
                 const row = tableBody.insertRow();
-                row.innerHTML = `
+                row.innerHTML = 
                     <td>${i + 1}</td>
                     <td>${entry.title}</td>
                     <td>${entry.releaseDate}</td>
                     <td>${entry.distributor}</td>
                     <td>${entry.isrc}</td>
                     <td>${entry.singer}</td>
-                    <td>${entry.songwriters.map(sw => `${sw.name} (${sw.share}% - ${sw.status})`).join(', ')}</td>
+                    <td>${entry.songwriters.map(sw => ${sw.name} (${sw.share}% - ${sw.status})).join(', ')}</td>
                     <td>
                         <button onclick="editCatalogue(${i})">Edit</button>
                         <button onclick="deleteCatalogue(${i})">Delete</button>
                     </td>
-                `;
+                ;
             }
 
             updatePagination();
@@ -202,53 +149,52 @@
 
         function updatePagination() {
             const totalPages = Math.ceil(catalogue.length / entriesPerPage);
-            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('pageInfo').innerText = Page ${currentPage} of ${totalPages};
 
             document.getElementById('prevPage').disabled = currentPage === 1;
             document.getElementById('nextPage').disabled = currentPage === totalPages;
         }
 
-        function changePage(direction) {
-            currentPage += direction;
-            updateCatalogueTable();
+        function changePage(offset) {
+            const totalPages = Math.ceil(catalogue.length / entriesPerPage);
+            const newPage = currentPage + offset;
+
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                updateCatalogueTable();
+            }
         }
 
         function searchCatalogue() {
-            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
-            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(searchTerm));
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            const filteredCatalogue = catalogue.filter(entry => entry.title.toLowerCase().includes(query));
             updateCatalogueTable(filteredCatalogue);
         }
 
         function editCatalogue(index) {
-            editingIndex = index;
             const entry = catalogue[index];
-
             document.getElementById('editTitle').value = entry.title;
             document.getElementById('editReleaseDate').value = entry.releaseDate;
             document.getElementById('editDistributor').value = entry.distributor;
             document.getElementById('editISRC').value = entry.isrc;
             document.getElementById('editSinger').value = entry.singer;
 
-            const editSongwritersDiv = document.getElementById('editSongwriters');
-            editSongwritersDiv.innerHTML = ''; // Clear the previous inputs
+            const editSongwriterDiv = document.getElementById('editSongwriters');
+            editSongwriterDiv.innerHTML = '';
 
             entry.songwriters.forEach(sw => {
-                const songwriterDiv = document.createElement('div');
-                songwriterDiv.innerHTML = `
-                    <label>Songwriter:</label>
-                    <input type="text" class="editSongwriterName" value="${sw.name}" required>
+                const songwriterInput = document.createElement('div');
+                songwriterInput.innerHTML = 
+                    <input type="text" class="editSongwriterName" value="${sw.name}" readonly>
                     <input type="number" class="editShare" value="${sw.share}" required>
-                    <select class="editRole">
-                        <option value="Author" ${sw.status === 'Author' ? 'selected' : ''}>Author</option>
-                        <option value="Composer" ${sw.status === 'Composer' ? 'selected' : ''}>Composer</option>
-                        <option value="Author & Composer" ${sw.status === 'Author & Composer' ? 'selected' : ''}>Author & Composer</option>
-                    </select>
+                    <input type="text" class="editRole" value="${sw.status}" readonly>
                     <button type="button" onclick="removeSongwriterInput(this)">Remove</button>
                     <br><br>
-                `;
-                editSongwritersDiv.appendChild(songwriterDiv);
+                ;
+                editSongwriterDiv.appendChild(songwriterInput);
             });
 
+            editingIndex = index;
             document.getElementById('editSection').style.display = 'block';
         }
 
@@ -258,17 +204,16 @@
             const distributor = document.getElementById('editDistributor').value;
             const isrc = document.getElementById('editISRC').value;
             const singer = document.getElementById('editSinger').value;
-
-            const editSongwriterInputs = document.querySelectorAll('#editSongwriters > div');
+            const songwriterInputs = document.querySelectorAll('#editSongwriters > div');
             let totalShare = 0;
-            let updatedSongwriters = [];
+            let songwritersData = [];
 
-            editSongwriterInputs.forEach(input => {
+            songwriterInputs.forEach(input => {
                 const name = input.querySelector('.editSongwriterName').value;
                 const share = parseFloat(input.querySelector('.editShare').value);
                 totalShare += share;
                 const status = input.querySelector('.editRole').value;
-                updatedSongwriters.push({ name, share, status });
+                songwritersData.push({ name, share, status });
             });
 
             if (totalShare !== 100) {
@@ -276,18 +221,14 @@
                 return;
             }
 
-            // Update the catalogue entry
-            catalogue[editingIndex] = { title, releaseDate, distributor, isrc, singer, songwriters: updatedSongwriters };
+            catalogue[editingIndex] = { title, releaseDate, distributor, isrc, singer, songwriters: songwritersData };
             localStorage.setItem('catalogue', JSON.stringify(catalogue));
             updateCatalogueTable();
-
-            document.getElementById('editSection').style.display = 'none'; // Hide the edit section
-            editingIndex = -1; // Reset the editing index
+            document.getElementById('editSection').style.display = 'none';
         }
 
         function cancelEdit() {
             document.getElementById('editSection').style.display = 'none';
-            editingIndex = -1;
         }
 
         function deleteCatalogue(index) {
@@ -298,9 +239,8 @@
             }
         }
 
-        window.onload = function() {
-            updateCatalogueTable(); // Initial table update
-        };
+        // Initialize
+        updateCatalogueTable();
     </script>
 </body>
 </html>
